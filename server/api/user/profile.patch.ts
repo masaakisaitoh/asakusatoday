@@ -6,7 +6,8 @@ const bodySchema = z.object({
   userName: z.string().regex(/^[A-Za-z0-9_-]{3,32}$/).optional(),
   gender: z.enum(['male', 'female', 'other', 'unspecified']).nullable().optional(),
   birthYear: z.number().int().min(1900).max(new Date().getFullYear()).nullable().optional(),
-  nationality: z.string().length(2).nullable().optional()
+  nationality: z.string().length(2).nullable().optional(),
+  theme: z.enum(['light', 'dark', 'system']).optional()
 })
 
 export default defineEventHandler(async (event) => {
@@ -26,13 +27,15 @@ export default defineEventHandler(async (event) => {
        user_name = ?,
        gender = ?,
        birth_year = ?,
-       nationality = ?
+       nationality = ?,
+       theme = ?
      WHERE id = ?`
   ).run(
     body.userName ?? user.user_name,
     body.gender === undefined ? user.gender : body.gender,
     body.birthYear === undefined ? user.birth_year : body.birthYear,
     body.nationality === undefined ? user.nationality : body.nationality,
+    body.theme === undefined ? user.theme : body.theme,
     user.id
   )
 

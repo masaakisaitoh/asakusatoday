@@ -121,4 +121,36 @@ describe('account flow', async () => {
     await pageA.close()
     await pageB.close()
   }, 30000)
+
+  it('defaults to Light theme and previews Dark immediately when selected', async () => {
+    const page = await createPage('/account/create')
+    await createAndLoginAccount(page)
+    await page.waitForSelector('main svg')
+
+    expect(await page.locator('text=Light').first().isVisible()).toBe(true)
+
+    await page.click('text=Edit profile')
+    await page.getByLabel('Theme').click()
+    await page.getByRole('option', { name: 'Dark' }).click()
+
+    await expect.poll(async () => (await page.locator('html').getAttribute('class')) ?? '').toContain('dark')
+
+    await page.close()
+  }, 30000)
+
+  it('persists the selected theme after saving and reloading', async () => {
+    const page = await createPage('/account/create')
+    await createAndLoginAccount(page)
+
+    await page.click('text=Edit profile')
+    await page.getByLabel('Theme').click()
+    await page.getByRole('option', { name: 'Dark' }).click()
+    await page.click('text=Save')
+
+    await page.reload()
+    await page.waitForSelector('text=Dark')
+    await expect.poll(async () => (await page.locator('html').getAttribute('class')) ?? '').toContain('dark')
+
+    await page.close()
+  }, 30000)
 })

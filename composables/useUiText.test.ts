@@ -45,4 +45,21 @@ describe('useUiText', () => {
     const { t } = useUiText()
     expect(t('weather.summary', { temp: 29, pop: 30 })).toBe('High 29°C · Rain 30%')
   })
+
+  it('returns theme option labels for en and ja', async () => {
+    const { useArticleLocale } = await import('./useArticleLocale')
+    vi.stubGlobal('useArticleLocale', useArticleLocale)
+    const { useUiText } = await import('./useUiText')
+
+    const { locale, setLocale } = useArticleLocale()
+    const { t } = useUiText()
+    expect(t('profile.theme')).toBe('Theme')
+    expect(t('profile.themeLight')).toBe('Light')
+    expect(t('profile.themeDark')).toBe('Dark')
+    expect(t('profile.themeSystem')).toBe('System')
+
+    setLocale('ja')
+    expect(locale.value).toBe('ja')
+    expect(t('profile.themeDark')).toBe('ダーク')
+  })
 })

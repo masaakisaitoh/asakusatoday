@@ -32,7 +32,10 @@ export async function collectSource(
   if (existing) return 'skipped'
   try {
     const response = await fetchFn(site.url)
-    if (!response.ok) return 'error'
+    if (!response.ok) {
+      console.error(`収集エラー: ${site.url} (status ${response.status})`)
+      return 'error'
+    }
     const html = await response.text()
     const rawText = extractArticleText(html)
     const result = db
@@ -41,7 +44,8 @@ export async function collectSource(
       )
       .run(site.url, site.siteName, site.category, rawText)
     return result.changes > 0 ? 'inserted' : 'skipped'
-  } catch {
+  } catch (err) {
+    console.error(`収集エラー: ${site.url}`, err)
     return 'error'
   }
 }
@@ -57,11 +61,13 @@ export async function collectListSource(
   try {
     const response = await fetchFn(site.url)
     if (!response.ok) {
+      console.error(`収集エラー: ${site.url} (status ${response.status})`)
       counts.error++
       return counts
     }
     listHtml = await response.text()
-  } catch {
+  } catch (err) {
+    console.error(`収集エラー: ${site.url}`, err)
     counts.error++
     return counts
   }
@@ -77,6 +83,7 @@ export async function collectListSource(
     try {
       const response = await fetchFn(articleUrl)
       if (!response.ok) {
+        console.error(`収集エラー: ${articleUrl} (status ${response.status})`)
         counts.error++
         continue
       }
@@ -92,7 +99,8 @@ export async function collectListSource(
       } else {
         counts.skipped++
       }
-    } catch {
+    } catch (err) {
+      console.error(`収集エラー: ${articleUrl}`, err)
       counts.error++
     }
   }
