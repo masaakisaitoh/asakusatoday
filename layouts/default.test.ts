@@ -3,6 +3,7 @@ import { mount } from '@vue/test-utils'
 import { ref } from 'vue'
 import DefaultLayout from './default.vue'
 import { useArticleLocale } from '../composables/useArticleLocale'
+import { useUiText } from '../composables/useUiText'
 
 const stubs = {
   NuxtLink: { template: '<a><slot /></a>' },
@@ -20,8 +21,15 @@ afterEach(() => {
 })
 
 function stubUseState(user: { avatar_seed: string; user_name: string } | null = null) {
-  vi.stubGlobal('useState', (_key: string, init: () => unknown) => ref(init()))
+  const stateCache = new Map()
+  vi.stubGlobal('useState', (_key: string, init: () => unknown) => {
+    if (!stateCache.has(_key)) {
+      stateCache.set(_key, ref(init()))
+    }
+    return stateCache.get(_key)
+  })
   vi.stubGlobal('useArticleLocale', useArticleLocale)
+  vi.stubGlobal('useUiText', useUiText)
   vi.stubGlobal('useFetch', () => ({ data: ref(user) }))
   const fetchMock = vi.fn()
   const navigateMock = vi.fn()
@@ -37,10 +45,10 @@ describe('default layout', () => {
     expect(wrapper.text()).toContain('ASAKUSA TODAY')
   })
 
-  it('renders the AI-generation disclosure in the footer', () => {
+  it('renders the site handle in the footer', () => {
     stubUseState()
     const wrapper = mount(DefaultLayout, { global: { stubs } })
-    expect(wrapper.text()).toContain('AI-generated')
+    expect(wrapper.find('footer').text()).toContain('@ASAKUSA TODAY')
   })
 
   it('renders slot content in the main area', () => {

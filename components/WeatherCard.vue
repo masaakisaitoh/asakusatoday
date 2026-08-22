@@ -1,10 +1,12 @@
 <script setup lang="ts">
-defineProps<{
+const props = defineProps<{
   weatherEmoji: string
   weatherLabel: string
   pop: number
   highTemp: number
 }>()
+
+const { t } = useUiText()
 </script>
 
 <template>
@@ -13,7 +15,7 @@ defineProps<{
       <span class="text-3xl">{{ weatherEmoji }}</span>
       <div class="text-sm text-muted">
         <p class="text-highlighted font-bold">{{ weatherLabel }}</p>
-        <p>High {{ highTemp }}°C · Rain {{ pop }}%</p>
+        <p>{{ t('weather.summary', { temp: props.highTemp, pop: props.pop }) }}</p>
       </div>
     </div>
   </UCard>

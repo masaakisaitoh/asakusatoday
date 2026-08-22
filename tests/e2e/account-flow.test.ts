@@ -4,9 +4,9 @@ import { setup, createPage } from '@nuxt/test-utils/e2e'
 
 async function createAndLoginAccount(page: Awaited<ReturnType<typeof createPage>>): Promise<void> {
   await page.check('input[type=checkbox]')
-  await page.click('text=アカウントを新規作成')
+  await page.click('text=Create account')
   await page.check('input[type=checkbox]')
-  await page.click('text=続ける')
+  await page.click('text=Continue')
   await page.waitForURL(/\/profile/)
 }
 
@@ -16,26 +16,45 @@ describe('account flow', async () => {
   it('creates an account, views the profile, regenerates the avatar, and logs out', async () => {
     const page = await createPage('/account/create')
     await page.check('input[type=checkbox]')
-    await page.click('text=アカウントを新規作成')
+    await page.click('text=Create account')
 
     const privateKey = await page.locator('code').innerText()
     expect(privateKey).toMatch(/^[0-9A-Fa-f]{64}$/)
 
     await page.check('input[type=checkbox]')
-    await page.click('text=続ける')
+    await page.click('text=Continue')
     await page.waitForURL(/\/profile/)
-    await page.waitForSelector('svg')
+    await page.waitForSelector('main svg')
 
-    expect(await page.locator('svg').isVisible()).toBe(true)
+    expect(await page.locator('main svg').isVisible()).toBe(true)
     expect(await page.locator('text=Not set').count()).toBe(3)
     expect(await page.locator('dd.font-mono').isVisible()).toBe(true)
 
-    const before = await page.locator('svg').innerHTML()
+    const before = await page.locator('main svg').innerHTML()
     await page.click('text=Regenerate avatar')
-    await expect.poll(() => page.locator('svg').innerHTML()).not.toBe(before)
+    await expect.poll(() => page.locator('main svg').innerHTML()).not.toBe(before)
 
     await page.click('text=Log out')
     await page.waitForURL(/\/login/)
+
+    await page.close()
+  }, 30000)
+
+  it('updates the header avatar immediately after login and after regenerating, without a page reload', async () => {
+    const page = await createPage('/account/create')
+    await createAndLoginAccount(page)
+
+    await page.waitForSelector('[aria-label="User menu"] svg', { timeout: 10000 })
+    const headerBefore = await page.locator('[aria-label="User menu"] svg').innerHTML()
+    const profileBefore = await page.locator('main svg').first().innerHTML()
+    expect(headerBefore).toBe(profileBefore)
+
+    await page.click('text=Regenerate avatar')
+    await expect.poll(() => page.locator('main svg').first().innerHTML()).not.toBe(profileBefore)
+
+    const headerAfter = await page.locator('[aria-label="User menu"] svg').innerHTML()
+    const profileAfter = await page.locator('main svg').first().innerHTML()
+    expect(headerAfter).toBe(profileAfter)
 
     await page.close()
   }, 30000)

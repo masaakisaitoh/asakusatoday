@@ -4,6 +4,7 @@ import { useAccount } from '../../composables/useAccount'
 import type { SymbolAccount } from '../../utils/symbolCrypto'
 import { buildPrivateKeyFileContent, PRIVATE_KEY_FILE_NAME } from '../../utils/privateKeyFile'
 
+const { t } = useUiText()
 const { createNewAccount, loginWithAccount } = useAccount()
 const account = ref<SymbolAccount | null>(null)
 const understood = ref(false)
@@ -36,7 +37,7 @@ async function proceed() {
     await loginWithAccount(account.value)
     await navigateTo('/profile')
   } catch (e: any) {
-    error.value = e?.data?.message ?? 'ログインに失敗しました'
+    error.value = e?.data?.message ?? t('common.loginFailed')
   } finally {
     loading.value = false
   }
@@ -44,29 +45,33 @@ async function proceed() {
 </script>
 
 <template>
-  <div>
-    <div v-if="!account">
-      <p>
-        この秘密鍵はあなたのアカウントの唯一の証明です。
-        サーバーには保存されません。紛失すると二度と復元できません。
-        誰にも教えないでください。
-      </p>
-      <label>
-        <input v-model="understood" type="checkbox" />
-        内容を理解しました
-      </label>
-      <button :disabled="!understood" @click="generate">アカウントを新規作成</button>
-    </div>
+  <div class="min-h-full flex items-center justify-center px-4 py-12">
+    <UCard class="w-full max-w-sm">
+      <template #header>
+        <h1 class="text-lg font-bold text-center">{{ t('createAccount.title') }}</h1>
+      </template>
 
-    <div v-else>
-      <p>この秘密鍵を必ず保存してください。再表示はできません。</p>
-      <code>{{ account.privateKey }}</code>
-      <label>
-        <input v-model="confirmed" type="checkbox" />
-        秘密鍵を保存しました
-      </label>
-      <button :disabled="!confirmed || loading" @click="proceed">続ける</button>
-      <p v-if="error">{{ error }}</p>
-    </div>
+      <div v-if="!account" class="flex flex-col gap-3">
+        <p class="text-sm text-muted">{{ t('createAccount.disclosure') }}</p>
+        <label class="flex items-center gap-2 text-sm">
+          <input v-model="understood" type="checkbox" />
+          {{ t('createAccount.understand') }}
+        </label>
+        <UButton block size="lg" :disabled="!understood" @click="generate">{{ t('createAccount.submit') }}</UButton>
+      </div>
+
+      <div v-else class="flex flex-col gap-3">
+        <p class="text-sm text-muted">{{ t('createAccount.savePrompt') }}</p>
+        <code class="block break-all rounded-md bg-elevated px-3 py-2 text-xs">{{ account.privateKey }}</code>
+        <label class="flex items-center gap-2 text-sm">
+          <input v-model="confirmed" type="checkbox" />
+          {{ t('createAccount.saved') }}
+        </label>
+        <UButton block size="lg" :loading="loading" :disabled="!confirmed || loading" @click="proceed">
+          {{ t('createAccount.continue') }}
+        </UButton>
+        <p v-if="error" class="text-sm text-error">{{ error }}</p>
+      </div>
+    </UCard>
   </div>
 </template>

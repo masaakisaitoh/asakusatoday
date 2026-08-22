@@ -1,7 +1,7 @@
 import { PrivateKey, PublicKey, Signature } from 'symbol-sdk'
 import { KeyPair, Network, Verifier } from 'symbol-sdk/symbol'
 
-const NETWORK = Network.TESTNET
+export const NETWORK = process.env.NODE_ENV === 'production' ? Network.MAINNET : Network.TESTNET
 const textEncoder = new TextEncoder()
 
 export interface SymbolAccount {

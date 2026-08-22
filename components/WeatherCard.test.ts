@@ -1,10 +1,29 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { mount } from '@vue/test-utils'
+import { ref } from 'vue'
 import WeatherCard from './WeatherCard.vue'
+import { useArticleLocale } from '../composables/useArticleLocale'
+import { useUiText } from '../composables/useUiText'
 
 const stubs = {
   UCard: { template: '<div><slot /></div>' }
 }
+
+beforeEach(() => {
+  const stateCache = new Map()
+  vi.stubGlobal('useState', (_key: string, init: () => unknown) => {
+    if (!stateCache.has(_key)) {
+      stateCache.set(_key, ref(init()))
+    }
+    return stateCache.get(_key)
+  })
+  vi.stubGlobal('useArticleLocale', useArticleLocale)
+  vi.stubGlobal('useUiText', useUiText)
+})
+
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
 
 describe('WeatherCard', () => {
   it('renders the weather label, high temp, and pop', () => {
