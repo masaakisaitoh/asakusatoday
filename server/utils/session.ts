@@ -15,6 +15,7 @@ export interface UserRow {
   birth_year: number | null
   nationality: string | null
   avatar_seed: string
+  is_admin: number
   created_at: string
 }
 

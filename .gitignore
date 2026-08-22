@@ -1,0 +1,7 @@
+node_modules
+.nuxt
+.output
+data/*.sqlite3
+data/*.sqlite3-*
+.env
+.superpowers/

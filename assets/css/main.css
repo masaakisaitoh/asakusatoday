@@ -1,0 +1,61 @@
+@import "tailwindcss";
+@import "@nuxt/ui";
+
+@theme {
+  /* ASAKUSA RED — brand primary (伝統) */
+  --color-asakusa-red-50: #fcf5f5;
+  --color-asakusa-red-100: #faebeb;
+  --color-asakusa-red-200: #f1cecc;
+  --color-asakusa-red-300: #e9b1ad;
+  --color-asakusa-red-400: #d97670;
+  --color-asakusa-red-500: #c83b32;
+  --color-asakusa-red-600: #b0342c;
+  --color-asakusa-red-700: #902a24;
+  --color-asakusa-red-800: #74221d;
+  --color-asakusa-red-900: #5a1b16;
+  --color-asakusa-red-950: #3c120f;
+
+  /* ASAKUSA GOLD — brand secondary (浅草の装飾) */
+  --color-asakusa-gold-50: #fcfaf5;
+  --color-asakusa-gold-100: #faf5ec;
+  --color-asakusa-gold-200: #f2e6cf;
+  --color-asakusa-gold-300: #e9d7b1;
+  --color-asakusa-gold-400: #d9b877;
+  --color-asakusa-gold-500: #c99a3d;
+  --color-asakusa-gold-600: #b18836;
+  --color-asakusa-gold-700: #916f2c;
+  --color-asakusa-gold-800: #755923;
+  --color-asakusa-gold-900: #5a451b;
+  --color-asakusa-gold-950: #3c2e12;
+
+  /* INK BLACK — base text color (東京・墨) */
+  --color-ink-black: #222222;
+
+  /* WASHI — page background (和紙) */
+  --color-washi: #f7f1e5;
+
+  /* TOKYO TEAL — web accent (現代的な旅行メディア) */
+  --color-tokyo-teal: #287c7b;
+}
+
+.slide-forward-enter-active,
+.slide-forward-leave-active,
+.slide-back-enter-active,
+.slide-back-leave-active {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.3s ease;
+}
+
+.slide-forward-enter-from {
+  transform: translateX(100%);
+}
+.slide-forward-leave-to {
+  transform: translateX(-30%);
+}
+.slide-back-enter-from {
+  transform: translateX(-30%);
+}
+.slide-back-leave-to {
+  transform: translateX(100%);
+}

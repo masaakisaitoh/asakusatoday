@@ -1,0 +1,319 @@
+import { describe, it, expect, vi } from 'vitest'
+import type { MessageClient } from './generator'
+
+describe('buildGenerationPrompt', () => {
+  it('includes each source text, site name, and url', async () => {
+    const { buildGenerationPrompt } = await import('./generator')
+    const prompt = buildGenerationPrompt([
+      { siteName: 'e-asakusa.jp', url: 'https://e-asakusa.jp/news/1', rawText: '元の本文A' },
+      { siteName: 'senso-ji.jp', url: 'https://www.senso-ji.jp/news/2', rawText: '元の本文B' }
+    ])
+    expect(prompt).toContain('元の本文A')
+    expect(prompt).toContain('元の本文B')
+    expect(prompt).toContain('e-asakusa.jp')
+    expect(prompt).toContain('senso-ji.jp')
+    expect(prompt).toContain('https://e-asakusa.jp/news/1')
+    expect(prompt).toContain('https://www.senso-ji.jp/news/2')
+  })
+
+  it('instructs a concise news-style structure with a soft, friendly tone', async () => {
+    const { buildGenerationPrompt } = await import('./generator')
+    const prompt = buildGenerationPrompt([
+      { siteName: 'a', url: 'https://a.example/', rawText: 'text' }
+    ])
+    expect(prompt).toContain('ニュース記事')
+    expect(prompt).toContain('ですます調')
+    expect(prompt).toContain('簡潔')
+  })
+})
+
+describe('parseGeneratedArticle', () => {
+  it('parses a valid JSON response', async () => {
+    const { parseGeneratedArticle } = await import('./generator')
+    const result = parseGeneratedArticle('{"title": "タイトル", "body": "本文"}')
+    expect(result).toEqual({ title: 'タイトル', body: '本文' })
+  })
+
+  it('throws when the shape is invalid', async () => {
+    const { parseGeneratedArticle } = await import('./generator')
+    expect(() => parseGeneratedArticle('{"title": "タイトルのみ"}')).toThrow()
+  })
+})
+
+function fakeClient(responseText: string): MessageClient {
+  return {
+    messages: {
+      create: async () => ({ content: [{ type: 'text', text: responseText }] })
+    }
+  }
+}
+
+describe('generateArticleFromSources', () => {
+  it('returns the parsed article from the model response', async () => {
+    const { generateArticleFromSources } = await import('./generator')
+    const client = fakeClient('{"title": "生成タイトル", "body": "生成本文"}')
+    const article = await generateArticleFromSources(client, [
+      { siteName: 'e-asakusa.jp', url: 'https://e-asakusa.jp/', rawText: '元テキスト' }
+    ])
+    expect(article).toEqual({ title: '生成タイトル', body: '生成本文' })
+  })
+
+  it('requests enough max_tokens to leave room for extended thinking without truncating output', async () => {
+    const { generateArticleFromSources } = await import('./generator')
+    const create = vi.fn(async () => ({ content: [{ type: 'text', text: '{"title": "t", "body": "b"}' }] }))
+    await generateArticleFromSources({ messages: { create } }, [
+      { siteName: 'e-asakusa.jp', url: 'https://e-asakusa.jp/', rawText: '元テキスト' }
+    ])
+    expect(create.mock.calls[0][0].max_tokens).toBeGreaterThanOrEqual(16000)
+  })
+})
+
+const TRANSLATION_JSON = JSON.stringify({
+  en: { title: 'EN title', body: 'EN body' },
+  ko: { title: 'KO title', body: 'KO body' },
+  'zh-Hant': { title: 'ZHT title', body: 'ZHT body' },
+  'zh-Hans': { title: 'ZHS title', body: 'ZHS body' },
+  pt: { title: 'PT title', body: 'PT body' }
+})
+
+describe('buildTranslationPrompt', () => {
+  it('includes the original title and body, and instructs translation into 5 languages', async () => {
+    const { buildTranslationPrompt } = await import('./generator')
+    const prompt = buildTranslationPrompt({ title: '元タイトル', body: '元本文' })
+    expect(prompt).toContain('元タイトル')
+    expect(prompt).toContain('元本文')
+    expect(prompt).toContain('タイトル：')
+    expect(prompt).toContain('en')
+    expect(prompt).toContain('ko')
+    expect(prompt).toContain('zh-Hant')
+    expect(prompt).toContain('zh-Hans')
+    expect(prompt).toContain('pt')
+  })
+})
+
+describe('parseTranslatedArticle', () => {
+  it('parses a valid JSON response with all 5 locales', async () => {
+    const { parseTranslatedArticle } = await import('./generator')
+    const result = parseTranslatedArticle(TRANSLATION_JSON)
+    expect(result).toEqual({
+      en: { title: 'EN title', body: 'EN body' },
+      ko: { title: 'KO title', body: 'KO body' },
+      'zh-Hant': { title: 'ZHT title', body: 'ZHT body' },
+      'zh-Hans': { title: 'ZHS title', body: 'ZHS body' },
+      pt: { title: 'PT title', body: 'PT body' }
+    })
+  })
+
+  it('throws when a locale is missing', async () => {
+    const { parseTranslatedArticle } = await import('./generator')
+    expect(() =>
+      parseTranslatedArticle(JSON.stringify({ en: { title: 't', body: 'b' } }))
+    ).toThrow()
+  })
+
+  it('throws when a locale entry has the wrong shape', async () => {
+    const { parseTranslatedArticle } = await import('./generator')
+    expect(() =>
+      parseTranslatedArticle(
+        JSON.stringify({
+          en: { title: 't' },
+          ko: { title: 't', body: 'b' },
+          'zh-Hant': { title: 't', body: 'b' },
+          'zh-Hans': { title: 't', body: 'b' },
+          pt: { title: 't', body: 'b' }
+        })
+      )
+    ).toThrow()
+  })
+})
+
+describe('translateArticle', () => {
+  it('returns the parsed translations from the model response', async () => {
+    const { translateArticle } = await import('./generator')
+    const client = fakeClient(TRANSLATION_JSON)
+    const translations = await translateArticle(client, { title: '元タイトル', body: '元本文' })
+    expect(translations.en).toEqual({ title: 'EN title', body: 'EN body' })
+    expect(translations['zh-Hans']).toEqual({ title: 'ZHS title', body: 'ZHS body' })
+  })
+
+  it('requests enough max_tokens to leave room for extended thinking without truncating 4-locale output', async () => {
+    const { translateArticle } = await import('./generator')
+    const create = vi.fn(async () => ({ content: [{ type: 'text', text: TRANSLATION_JSON }] }))
+    await translateArticle({ messages: { create } }, { title: '元タイトル', body: '元本文' })
+    expect(create.mock.calls[0][0].max_tokens).toBeGreaterThanOrEqual(16000)
+  })
+})
+
+function fakeGenerateAndTranslateClient(): MessageClient {
+  return {
+    messages: {
+      create: async (params) => {
+        const content = params.messages[0].content
+        if (content.includes('タイトル：')) {
+          return { content: [{ type: 'text', text: TRANSLATION_JSON }] }
+        }
+        return { content: [{ type: 'text', text: '{"title": "生成タイトル", "body": "生成本文"}' }] }
+      }
+    }
+  }
+}
+
+describe('generateDraftsForUnprocessedSources', () => {
+  it('generates a separate article per source even within the same category', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://a.example/', 'a', 'asakusa-area', '本文A')
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://b.example/', 'b', 'asakusa-area', '本文B')
+
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const client = fakeGenerateAndTranslateClient()
+    const result = await generateDraftsForUnprocessedSources(db, client)
+
+    expect(result).toEqual({ generated: 2, failed: 0 })
+
+    const articles = db.prepare(`SELECT * FROM articles`).all() as any[]
+    expect(articles).toHaveLength(2)
+    expect(articles.every((a) => a.category === 'asakusa-area')).toBe(true)
+
+    for (const article of articles) {
+      const links = db
+        .prepare(`SELECT source_id FROM article_sources WHERE article_id = ?`)
+        .all(article.id) as { source_id: number }[]
+      expect(links).toHaveLength(1)
+
+      const translations = db
+        .prepare(`SELECT locale FROM article_translations WHERE article_id = ?`)
+        .all(article.id) as { locale: string }[]
+      expect(translations.map((t) => t.locale).sort()).toEqual(['en', 'ja', 'ko', 'pt', 'zh-Hans', 'zh-Hant'])
+    }
+
+    const processedCount = (
+      db.prepare(`SELECT COUNT(*) as c FROM sources WHERE processed_at IS NOT NULL`).get() as { c: number }
+    ).c
+    expect(processedCount).toBe(2)
+  })
+
+  it('skips a failing source without affecting others', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://a.example/', 'a', 'asakusa-area', '本文A')
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://c.example/', 'c', 'asakusa-culture', '本文C')
+
+    const client: MessageClient = {
+      messages: {
+        create: async (params) => {
+          const content = params.messages[0].content
+          if (content.includes('本文A')) throw new Error('API error')
+          if (content.includes('タイトル：')) {
+            return { content: [{ type: 'text', text: TRANSLATION_JSON }] }
+          }
+          return { content: [{ type: 'text', text: '{"title": "生成タイトル", "body": "生成本文"}' }] }
+        }
+      }
+    }
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const result = await generateDraftsForUnprocessedSources(db, client)
+
+    expect(result).toEqual({ generated: 1, failed: 1 })
+    const failingSource = db.prepare(`SELECT processed_at FROM sources WHERE url = ?`).get('https://a.example/') as any
+    expect(failingSource.processed_at).toBeNull()
+    const succeedingSource = db.prepare(`SELECT processed_at FROM sources WHERE url = ?`).get('https://c.example/') as any
+    expect(succeedingSource.processed_at).not.toBeNull()
+  })
+
+  it('excludes weather and traffic sources from generation', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://weather.example/', 'w', 'weather', '天気本文')
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://traffic.example/', 't', 'traffic', '交通本文')
+
+    const create = vi.fn(async () => ({ content: [{ type: 'text', text: '{"title": "t", "body": "b"}' }] }))
+    const client: MessageClient = { messages: { create } }
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const result = await generateDraftsForUnprocessedSources(db, client)
+
+    expect(result).toEqual({ generated: 0, failed: 0 })
+    expect(create).not.toHaveBeenCalled()
+    const articles = db.prepare(`SELECT * FROM articles`).all()
+    expect(articles).toHaveLength(0)
+    const unprocessed = db
+      .prepare(`SELECT COUNT(*) as c FROM sources WHERE processed_at IS NULL`)
+      .get() as { c: number }
+    expect(unprocessed.c).toBe(2)
+  })
+
+  it('logs the source url and error when a source fails to generate', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://a.example/', 'a', 'asakusa-area', '本文A')
+
+    const client: MessageClient = {
+      messages: {
+        create: async () => {
+          throw new Error('credit balance is too low')
+        }
+      }
+    }
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    await generateDraftsForUnprocessedSources(db, client)
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('https://a.example/'),
+      expect.any(Error)
+    )
+    errorSpy.mockRestore()
+  })
+
+  it('does not insert an article or its translations when translation fails', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://a.example/', 'a', 'asakusa-area', '本文A')
+
+    const client: MessageClient = {
+      messages: {
+        create: async (params) => {
+          const content = params.messages[0].content
+          if (content.includes('タイトル：')) throw new Error('translation API error')
+          return { content: [{ type: 'text', text: '{"title": "生成タイトル", "body": "生成本文"}' }] }
+        }
+      }
+    }
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const result = await generateDraftsForUnprocessedSources(db, client)
+
+    expect(result).toEqual({ generated: 0, failed: 1 })
+    const articles = db.prepare(`SELECT * FROM articles`).all()
+    expect(articles).toHaveLength(0)
+    const translations = db.prepare(`SELECT * FROM article_translations`).all()
+    expect(translations).toHaveLength(0)
+    const source = db.prepare(`SELECT processed_at FROM sources WHERE url = ?`).get('https://a.example/') as any
+    expect(source.processed_at).toBeNull()
+  })
+})
