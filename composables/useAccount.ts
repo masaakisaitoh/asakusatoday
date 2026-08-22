@@ -15,10 +15,12 @@ export function useAccount() {
       body: { address: account.address }
     })
     const signature = signMessage(account.privateKey, nonce)
-    return await $fetch('/api/auth/verify', {
+    const result = await $fetch('/api/auth/verify', {
       method: 'POST',
       body: { address: account.address, publicKey: account.publicKey, signature, nonce }
     })
+    await refreshNuxtData('current-user')
+    return result
   }
 
   return { createNewAccount, importExistingAccount, loginWithAccount }

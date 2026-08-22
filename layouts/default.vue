@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { computed, onMounted } from 'vue'
 import { SUPPORTED_LOCALES, type TranslationLocale } from '../server/utils/articles'
 
 const { locale, setLocale, loadStoredLocale } = useArticleLocale()
+const { t } = useUiText()
 
 const localeLabels: Record<TranslationLocale, string> = {
   ja: '日本語',
@@ -13,20 +14,20 @@ const localeLabels: Record<TranslationLocale, string> = {
   pt: 'Português'
 }
 
-const { data: user } = useFetch('/api/user/me')
+const { data: user } = useFetch('/api/user/me', { key: 'current-user' })
 
 async function logout(): Promise<void> {
   await $fetch('/api/auth/logout', { method: 'POST' })
   await navigateTo('/login')
 }
 
-const userMenuItems = [
+const userMenuItems = computed(() => [
   [
-    { label: 'Profile', to: '/profile' },
-    { label: 'Map', to: '/map' }
+    { label: t('nav.profile'), to: '/profile' },
+    { label: t('nav.map'), to: '/map' }
   ],
-  [{ label: 'Log out', onSelect: logout }]
-]
+  [{ label: t('nav.logOut'), onSelect: logout }]
+])
 
 onMounted(() => {
   loadStoredLocale()
@@ -62,7 +63,7 @@ function onLocaleChange(event: Event): void {
               <UserAvatar :seed="user.avatar_seed" :size="36" />
             </button>
           </UDropdownMenu>
-          <NuxtLink v-else to="/login" class="text-sm text-primary no-underline">Log in</NuxtLink>
+          <NuxtLink v-else to="/login" class="text-sm text-primary no-underline">{{ t('nav.logIn') }}</NuxtLink>
         </div>
       </div>
     </header>
@@ -71,7 +72,7 @@ function onLocaleChange(event: Event): void {
     </main>
     <footer class="border-t border-default">
       <div class="max-w-5xl mx-auto px-4 py-4 text-sm text-muted">
-        Articles are AI-generated from public sources and reviewed by our editors before publishing.
+        @ASAKUSA TODAY
       </div>
     </footer>
   </div>

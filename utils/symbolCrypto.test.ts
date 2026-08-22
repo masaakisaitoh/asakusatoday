@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, afterEach, vi } from 'vitest'
 
 describe('symbolCrypto', () => {
   it('verifies a signature produced by the matching private key', async () => {
@@ -27,5 +27,28 @@ describe('symbolCrypto', () => {
     const imported = importAccount(original.privateKey)
     expect(imported.address).toBe(original.address)
     expect(imported.publicKey).toBe(original.publicKey)
+  })
+})
+
+describe('symbolCrypto network selection', () => {
+  const originalNodeEnv = process.env.NODE_ENV
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv
+    vi.resetModules()
+  })
+
+  it('uses testnet when NODE_ENV is not production', async () => {
+    process.env.NODE_ENV = 'development'
+    vi.resetModules()
+    const { NETWORK } = await import('./symbolCrypto')
+    expect(NETWORK.name).toBe('testnet')
+  })
+
+  it('uses mainnet when NODE_ENV is production', async () => {
+    process.env.NODE_ENV = 'production'
+    vi.resetModules()
+    const { NETWORK } = await import('./symbolCrypto')
+    expect(NETWORK.name).toBe('mainnet')
   })
 })

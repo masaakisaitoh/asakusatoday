@@ -6,6 +6,7 @@ import { useSwipe } from '../composables/useSwipe'
 const route = useRoute()
 const router = useRouter()
 const { locale } = useArticleLocale()
+const { t } = useUiText()
 
 const pageRoot = ref<HTMLElement | null>(null)
 const transitionDirection = useState<'forward' | 'back'>('swipeTransitionDirection', () => 'forward')
@@ -34,7 +35,7 @@ const { data: weather } = await useFetch<WeatherForecast | null>('/api/weather')
 
 <template>
   <div ref="pageRoot" data-swipe-target class="max-w-5xl mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold text-primary mb-6">NEWS</h1>
+    <h1 class="text-2xl font-bold text-primary mb-6">{{ t('index.newsTitle') }}</h1>
     <WeatherCard
       v-if="weather"
       :weather-emoji="weather.weatherEmoji"
@@ -44,7 +45,7 @@ const { data: weather } = await useFetch<WeatherForecast | null>('/api/weather')
       class="mb-6"
     />
     <p v-if="data && data.articles.length === 0" class="text-muted">
-      No articles yet.
+      {{ t('index.noArticles') }}
     </p>
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
       <ArticleCard

@@ -2,6 +2,8 @@
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useGeolocation } from '../composables/useGeolocation'
 
+const { t } = useUiText()
+
 const ASAKUSA_CENTER: [number, number] = [35.7148, 139.7967]
 const DEFAULT_ZOOM = 16
 
@@ -70,7 +72,7 @@ function recenter(): void {
     <button
       type="button"
       class="absolute bottom-6 right-4 z-[1000] flex h-11 w-11 items-center justify-center rounded-full bg-default shadow ring ring-default"
-      aria-label="Recenter on my location"
+      :aria-label="t('map.recenterAria')"
       @click="recenter"
     >
       <span class="text-xl" aria-hidden="true">📍</span>
@@ -79,7 +81,7 @@ function recenter(): void {
       v-if="geo.status === 'denied' || geo.status === 'unsupported' || geo.status === 'error'"
       class="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] rounded bg-default px-3 py-2 text-xs shadow ring ring-default"
     >
-      Enable location access to see your position on the map.
+      {{ t('map.enableLocation') }}
     </p>
   </div>
 </template>
