@@ -2,12 +2,14 @@
 @import "@nuxt/ui";
 
 @theme static {
-  /* ASAKUSA RED — brand primary (伝統) */
+  /* ASAKUSA RED — brand primary (伝統). Nuxt UI uses shade 500 in light mode
+     and shade 400 in dark mode as the "primary" color, so 400 doubles as the
+     dark-mode brand red here. */
   --color-asakusa-red-50: #fcf5f5;
   --color-asakusa-red-100: #faebeb;
   --color-asakusa-red-200: #f1cecc;
   --color-asakusa-red-300: #e9b1ad;
-  --color-asakusa-red-400: #d97670;
+  --color-asakusa-red-400: #e05249;
   --color-asakusa-red-500: #c83b32;
   --color-asakusa-red-600: #b0342c;
   --color-asakusa-red-700: #902a24;
@@ -15,12 +17,13 @@
   --color-asakusa-red-900: #5a1b16;
   --color-asakusa-red-950: #3c120f;
 
-  /* ASAKUSA GOLD — brand secondary (浅草の装飾) */
+  /* ASAKUSA GOLD — brand secondary (浅草の装飾). Same 500 light / 400 dark
+     convention as above. */
   --color-asakusa-gold-50: #fcfaf5;
   --color-asakusa-gold-100: #faf5ec;
   --color-asakusa-gold-200: #f2e6cf;
   --color-asakusa-gold-300: #e9d7b1;
-  --color-asakusa-gold-400: #d9b877;
+  --color-asakusa-gold-400: #d8ad52;
   --color-asakusa-gold-500: #c99a3d;
   --color-asakusa-gold-600: #b18836;
   --color-asakusa-gold-700: #916f2c;
@@ -28,14 +31,28 @@
   --color-asakusa-gold-900: #5a451b;
   --color-asakusa-gold-950: #3c2e12;
 
-  /* INK BLACK — base text color (東京・墨) */
+  /* INK BLACK — base text color (東京・墨). Overridden to INK WHITE in dark
+     mode below. */
   --color-ink-black: #222222;
 
-  /* WASHI — page background (和紙) */
+  /* WASHI — page background (和紙). Overridden to NIGHT WASHI in dark mode
+     below. */
   --color-washi: #f7f1e5;
 
-  /* TOKYO TEAL — web accent (現代的な旅行メディア) */
+  /* TOKYO TEAL — web accent (現代的な旅行メディア). Overridden in dark mode
+     below. */
   --color-tokyo-teal: #287c7b;
+}
+
+/* Dark-mode overrides for the brand tokens above. Nuxt UI toggles a `.dark`
+   class on <html> based on the OS color-scheme preference; without these
+   overrides these custom tokens stayed frozen at their light values while
+   Nuxt UI's own semantic tokens (bg-default, border-default, etc.) switched
+   automatically, producing an inconsistent light/dark mix. */
+.dark {
+  --color-ink-black: #f2eee5;
+  --color-washi: #171716;
+  --color-tokyo-teal: #3d9995;
 }
 
 .slide-forward-enter-active,
