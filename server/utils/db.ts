@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS users (
   nationality TEXT,
   avatar_seed TEXT NOT NULL,
   is_admin INTEGER NOT NULL DEFAULT 0,
+  theme TEXT NOT NULL DEFAULT 'light',
   created_at TEXT NOT NULL
 );
 
@@ -73,6 +74,9 @@ function migrate(database: Database.Database): void {
   const userColumns = database.prepare('PRAGMA table_info(users)').all() as { name: string }[]
   if (!userColumns.some((c) => c.name === 'is_admin')) {
     database.exec('ALTER TABLE users ADD COLUMN is_admin INTEGER NOT NULL DEFAULT 0')
+  }
+  if (!userColumns.some((c) => c.name === 'theme')) {
+    database.exec("ALTER TABLE users ADD COLUMN theme TEXT NOT NULL DEFAULT 'light'")
   }
   const sourceColumns = database.prepare('PRAGMA table_info(sources)').all() as { name: string }[]
   if (!sourceColumns.some((c) => c.name === 'category')) {

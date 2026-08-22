@@ -39,6 +39,10 @@ export type UiStringKey =
   | 'profile.genderOther'
   | 'profile.genderPreferNotToSay'
   | 'profile.nationalityPlaceholder'
+  | 'profile.theme'
+  | 'profile.themeLight'
+  | 'profile.themeDark'
+  | 'profile.themeSystem'
   | 'index.newsTitle'
   | 'index.noArticles'
   | 'article.notFound'
@@ -89,6 +93,10 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.genderOther': 'Other',
     'profile.genderPreferNotToSay': 'Prefer not to say',
     'profile.nationalityPlaceholder': 'Select a country',
+    'profile.theme': 'Theme',
+    'profile.themeLight': 'Light',
+    'profile.themeDark': 'Dark',
+    'profile.themeSystem': 'System',
     'index.newsTitle': 'NEWS',
     'index.noArticles': 'No articles yet.',
     'article.notFound': 'Article not found',
@@ -138,6 +146,10 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.genderOther': 'その他',
     'profile.genderPreferNotToSay': '回答しない',
     'profile.nationalityPlaceholder': '国を選択',
+    'profile.theme': 'テーマ',
+    'profile.themeLight': 'ライト',
+    'profile.themeDark': 'ダーク',
+    'profile.themeSystem': 'システム設定に合わせる',
     'index.newsTitle': 'ニュース',
     'index.noArticles': 'まだ記事がありません。',
     'article.notFound': '記事が見つかりません',
@@ -187,6 +199,10 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.genderOther': '기타',
     'profile.genderPreferNotToSay': '응답하지 않음',
     'profile.nationalityPlaceholder': '국가 선택',
+    'profile.theme': '테마',
+    'profile.themeLight': '라이트',
+    'profile.themeDark': '다크',
+    'profile.themeSystem': '시스템 설정 사용',
     'index.newsTitle': '뉴스',
     'index.noArticles': '아직 기사가 없습니다.',
     'article.notFound': '기사를 찾을 수 없습니다',
@@ -236,6 +252,10 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.genderOther': '其他',
     'profile.genderPreferNotToSay': '不願透露',
     'profile.nationalityPlaceholder': '選擇國家',
+    'profile.theme': '主題',
+    'profile.themeLight': '淺色',
+    'profile.themeDark': '深色',
+    'profile.themeSystem': '跟隨系統設定',
     'index.newsTitle': '新聞',
     'index.noArticles': '尚無文章。',
     'article.notFound': '找不到文章',
@@ -285,6 +305,10 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.genderOther': '其他',
     'profile.genderPreferNotToSay': '不愿透露',
     'profile.nationalityPlaceholder': '选择国家',
+    'profile.theme': '主题',
+    'profile.themeLight': '浅色',
+    'profile.themeDark': '深色',
+    'profile.themeSystem': '跟随系统设置',
     'index.newsTitle': '新闻',
     'index.noArticles': '暂无文章。',
     'article.notFound': '未找到文章',
@@ -334,6 +358,10 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.genderOther': 'Outro',
     'profile.genderPreferNotToSay': 'Prefiro não dizer',
     'profile.nationalityPlaceholder': 'Selecione um país',
+    'profile.theme': 'Tema',
+    'profile.themeLight': 'Claro',
+    'profile.themeDark': 'Escuro',
+    'profile.themeSystem': 'Usar configuração do sistema',
     'index.newsTitle': 'NOTÍCIAS',
     'index.noArticles': 'Ainda não há artigos.',
     'article.notFound': 'Artigo não encontrado',

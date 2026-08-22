@@ -47,13 +47,6 @@ function onLocaleChange(event: Event): void {
           <span>ASAKUSA TODAY</span>
         </NuxtLink>
         <div class="flex items-center gap-3">
-          <select
-            class="rounded border border-default bg-default px-2 py-1 text-sm"
-            :value="locale"
-            @change="onLocaleChange"
-          >
-            <option v-for="l in SUPPORTED_LOCALES" :key="l" :value="l">{{ localeLabels[l] }}</option>
-          </select>
           <UDropdownMenu v-if="user" :items="userMenuItems" :content="{ align: 'end' }">
             <button
               type="button"
@@ -71,8 +64,15 @@ function onLocaleChange(event: Event): void {
       <slot />
     </main>
     <footer class="border-t border-default">
-      <div class="max-w-5xl mx-auto px-4 py-4 text-sm text-muted">
-        © ASAKUSA TODAY
+      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between text-sm text-muted">
+        <span>© ASAKUSA TODAY</span>
+        <select
+          class="rounded border border-default bg-default px-2 py-1 text-sm"
+          :value="locale"
+          @change="onLocaleChange"
+        >
+          <option v-for="l in SUPPORTED_LOCALES" :key="l" :value="l">{{ localeLabels[l] }}</option>
+        </select>
       </div>
     </footer>
   </div>

@@ -72,7 +72,6 @@ export const SOURCE_SITES: SourceSite[] = [
   { type: 'page', url: 'https://www.kensetsu.metro.tokyo.lg.jp/jimusho/toubuk/ueno/event', siteName: 'www.kensetsu.metro.tokyo.lg.jp', category: 'ueno-okachimachi-area' },
 
   { type: 'page', url: 'https://www.rakugo-kyokai.jp/joseki/suzumoto', siteName: 'www.rakugo-kyokai.jp', category: 'ueno-okachimachi-culture' },
-  { type: 'page', url: 'http://www.ntgp.co.jp/engei/ueno/index.html', siteName: 'www.ntgp.co.jp', category: 'ueno-okachimachi-culture' },
 
   { type: 'page', url: 'https://www.ameyoko.net/', siteName: 'www.ameyoko.net', category: 'ameyoko-area' },
   { type: 'page', url: 'https://www.ameyoko-plaza.com/', siteName: 'www.ameyoko-plaza.com', category: 'ameyoko-area' },

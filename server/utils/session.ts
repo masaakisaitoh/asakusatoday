@@ -16,6 +16,7 @@ export interface UserRow {
   nationality: string | null
   avatar_seed: string
   is_admin: number
+  theme: 'light' | 'dark' | 'system'
   created_at: string
 }
 

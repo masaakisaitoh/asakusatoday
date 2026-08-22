@@ -53,4 +53,28 @@ describe('user API', async () => {
     const second = await $fetch('/api/user/avatar/regenerate', { method: 'POST', headers: { cookie } })
     expect(first.avatarSeed).not.toBe(second.avatarSeed)
   })
+
+  it('updates theme and returns it via /api/user/me', async () => {
+    const cookie = await loginAndGetCookie()
+    const updated = await $fetch('/api/user/profile', {
+      method: 'PATCH',
+      headers: { cookie },
+      body: { theme: 'dark' }
+    })
+    expect(updated.theme).toBe('dark')
+
+    const me = await $fetch('/api/user/me', { headers: { cookie } })
+    expect(me.theme).toBe('dark')
+  })
+
+  it('rejects an invalid theme value', async () => {
+    const cookie = await loginAndGetCookie()
+    await expect(
+      $fetch('/api/user/profile', {
+        method: 'PATCH',
+        headers: { cookie },
+        body: { theme: 'blue' }
+      })
+    ).rejects.toMatchObject({ statusCode: 400 })
+  })
 })
