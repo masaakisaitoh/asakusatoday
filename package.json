@@ -5,23 +5,31 @@
   "scripts": {
     "dev": "nuxt dev",
     "build": "nuxt build",
-    "test": "vitest run"
+    "test": "vitest run",
+    "collect": "tsx scripts/collect.ts",
+    "generate": "tsx --env-file-if-exists=.env scripts/generate.ts"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.117.1",
     "@dicebear/collection": "^9.2.0",
     "@dicebear/core": "^9.2.0",
+    "@nuxt/ui": "^3.3.7",
     "better-sqlite3": "^11.3.0",
+    "cheerio": "^1.2.0",
+    "leaflet": "^1.9.4",
     "symbol-sdk": "npm:@nemnesia/symbol-sdk@^3.3.2-pure.2",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@nuxt/test-utils": "^3.14.0",
     "@types/better-sqlite3": "^7.6.11",
+    "@types/leaflet": "^1.9.22",
     "@vitejs/plugin-vue": "^6.0.0",
     "@vue/test-utils": "^2.4.0",
     "happy-dom": "^15.0.0",
     "nuxt": "^3.14.0",
     "playwright": "^1.48.0",
+    "tsx": "^4.23.12",
     "vitest": "^3.2.0",
     "vue": "^3.5.0"
   },
