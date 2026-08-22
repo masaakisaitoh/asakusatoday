@@ -72,7 +72,7 @@ function onLocaleChange(event: Event): void {
     </main>
     <footer class="border-t border-default">
       <div class="max-w-5xl mx-auto px-4 py-4 text-sm text-muted">
-        @ASAKUSA TODAY
+        © ASAKUSA TODAY
       </div>
     </footer>
   </div>

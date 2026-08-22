@@ -45,10 +45,10 @@ describe('default layout', () => {
     expect(wrapper.text()).toContain('ASAKUSA TODAY')
   })
 
-  it('renders the site handle in the footer', () => {
+  it('renders the copyright notice in the footer', () => {
     stubUseState()
     const wrapper = mount(DefaultLayout, { global: { stubs } })
-    expect(wrapper.find('footer').text()).toContain('@ASAKUSA TODAY')
+    expect(wrapper.find('footer').text()).toContain('© ASAKUSA TODAY')
   })
 
   it('renders slot content in the main area', () => {
