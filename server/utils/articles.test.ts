@@ -70,11 +70,25 @@ describe('listPublishedArticles', () => {
     expect(result.articles.map((a) => a.title)).toEqual(['New', 'Old'])
   })
 
-  it('paginates results at 10 per page', async () => {
+  it('filters by category when one is provided', async () => {
     const { useDb, resetDbForTests } = await import('./db')
     resetDbForTests()
     const db = useDb()
-    for (let i = 0; i < 15; i++) {
+    insertArticle(db, { title: 'Kuramae News', category: 'kuramae-area' })
+    insertArticle(db, { title: 'Ryogoku News', category: 'ryogoku-area' })
+
+    const { listPublishedArticles } = await import('./articles')
+    const result = listPublishedArticles(db, 1, 'ja', 'kuramae-area')
+
+    expect(result.total).toBe(1)
+    expect(result.articles.map((a) => a.title)).toEqual(['Kuramae News'])
+  })
+
+  it('paginates results at 5 per page', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    for (let i = 0; i < 12; i++) {
       insertArticle(db, {
         title: `Article ${i}`,
         publishedAt: `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`
@@ -84,11 +98,13 @@ describe('listPublishedArticles', () => {
     const { listPublishedArticles } = await import('./articles')
     const page1 = listPublishedArticles(db, 1, 'ja')
     const page2 = listPublishedArticles(db, 2, 'ja')
+    const page3 = listPublishedArticles(db, 3, 'ja')
 
-    expect(page1.articles).toHaveLength(10)
+    expect(page1.articles).toHaveLength(5)
     expect(page2.articles).toHaveLength(5)
-    expect(page1.total).toBe(15)
-    expect(page1.pageSize).toBe(10)
+    expect(page3.articles).toHaveLength(2)
+    expect(page1.total).toBe(12)
+    expect(page1.pageSize).toBe(5)
   })
 
   it('returns an empty array for a page beyond the last', async () => {

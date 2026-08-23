@@ -6,10 +6,16 @@ export interface PromptSource {
   rawText: string
 }
 
-export interface GeneratedArticle {
+export interface ArticleText {
   title: string
   body: string
 }
+
+export interface GeneratedArticle extends ArticleText {
+  sourceDate: string | null
+}
+
+const MIN_SOURCE_DATE = '2026-08-24'
 
 export type TranslatedLocale = 'en' | 'ko' | 'zh-Hant' | 'zh-Hans' | 'pt'
 
@@ -40,9 +46,11 @@ export function buildGenerationPrompt(sources: PromptSource[]): string {
 - 事実を捏造しないこと。元の文章に書かれていない情報を追加しないこと。
 - 絵文字は使わないこと。
 - タイトルは記事の内容を端的に表す一文にすること。
+- 情報源の本文から、そのお知らせ・記事が公開または更新された日付を読み取れる場合は、本文中に「〇年〇月〇日発表」のように明記すること。日付が読み取れない場合は、無理に日付へ言及しないこと。
+- 情報源の本文から読み取れた公開日または更新日を、YYYY-MM-DD形式で "sourceDate" に設定すること。読み取れない場合は "sourceDate" を null にすること。
 
 出力は以下のJSON形式のみとし、他の文章は含めないこと：
-{"title": "...", "body": "..."}
+{"title": "...", "body": "...", "sourceDate": "YYYY-MM-DD" または null}
 
 ---
 ${sourcesText}
@@ -54,7 +62,11 @@ export function parseGeneratedArticle(responseText: string): GeneratedArticle {
   if (typeof parsed.title !== 'string' || typeof parsed.body !== 'string') {
     throw new Error('Invalid generated article shape')
   }
-  return { title: parsed.title, body: parsed.body }
+  return {
+    title: parsed.title,
+    body: parsed.body,
+    sourceDate: typeof parsed.sourceDate === 'string' ? parsed.sourceDate : null
+  }
 }
 
 export async function generateArticleFromSources(
@@ -71,7 +83,7 @@ export async function generateArticleFromSources(
   return parseGeneratedArticle(textBlock.text)
 }
 
-export function buildTranslationPrompt(article: GeneratedArticle): string {
+export function buildTranslationPrompt(article: ArticleText): string {
   return `以下は日本語で書かれた地域情報サイト「ASAKUSA TODAY」の記事です。
 この内容を、英語（en）・韓国語（ko）・繁体字中国語（zh-Hant）・簡体字中国語（zh-Hans）・ポルトガル語（pt）の5言語に翻訳してください。
 
@@ -89,7 +101,7 @@ ${article.body}
 ---`
 }
 
-export function parseTranslatedArticle(responseText: string): Record<TranslatedLocale, GeneratedArticle> {
+export function parseTranslatedArticle(responseText: string): Record<TranslatedLocale, ArticleText> {
   const parsed = JSON.parse(responseText)
   for (const locale of TRANSLATED_LOCALES) {
     const entry = parsed[locale]
@@ -108,8 +120,8 @@ export function parseTranslatedArticle(responseText: string): Record<TranslatedL
 
 export async function translateArticle(
   client: MessageClient,
-  article: GeneratedArticle
-): Promise<Record<TranslatedLocale, GeneratedArticle>> {
+  article: ArticleText
+): Promise<Record<TranslatedLocale, ArticleText>> {
   const response = await client.messages.create({
     model: 'claude-opus-5',
     max_tokens: 16000,
@@ -131,7 +143,7 @@ interface UnprocessedSource {
 export async function generateDraftsForUnprocessedSources(
   db: Database.Database,
   client: MessageClient
-): Promise<{ generated: number; failed: number }> {
+): Promise<{ generated: number; failed: number; skippedOld: number }> {
   const sources = db
     .prepare(
       `SELECT id, url, site_name, category, raw_text FROM sources WHERE processed_at IS NULL AND category NOT IN ('weather', 'traffic')`
@@ -140,6 +152,7 @@ export async function generateDraftsForUnprocessedSources(
 
   let generated = 0
   let failed = 0
+  let skippedOld = 0
 
   const insertArticle = db.prepare(
     `INSERT INTO articles (status, category, created_at) VALUES ('draft', ?, datetime('now'))`
@@ -150,13 +163,22 @@ export async function generateDraftsForUnprocessedSources(
   const insertArticleSource = db.prepare(
     `INSERT INTO article_sources (article_id, source_id) VALUES (?, ?)`
   )
-  const markProcessed = db.prepare(`UPDATE sources SET processed_at = datetime('now') WHERE id = ?`)
+  const markProcessed = db.prepare(
+    `UPDATE sources SET processed_at = datetime('now'), resource_created_at = ? WHERE id = ?`
+  )
 
   for (const source of sources) {
     try {
       const article = await generateArticleFromSources(client, [
         { siteName: source.site_name, url: source.url, rawText: source.raw_text }
       ])
+
+      if (article.sourceDate && article.sourceDate < MIN_SOURCE_DATE) {
+        markProcessed.run(article.sourceDate, source.id)
+        skippedOld++
+        continue
+      }
+
       const translations = await translateArticle(client, article)
 
       const insertResult = insertArticle.run(source.category)
@@ -166,7 +188,7 @@ export async function generateDraftsForUnprocessedSources(
         insertTranslation.run(articleId, locale, translations[locale].title, translations[locale].body)
       }
       insertArticleSource.run(articleId, source.id)
-      markProcessed.run(source.id)
+      markProcessed.run(article.sourceDate, source.id)
       generated++
     } catch (err) {
       console.error(`記事生成に失敗しました (source: ${source.url}):`, err)
@@ -174,5 +196,5 @@ export async function generateDraftsForUnprocessedSources(
     }
   }
 
-  return { generated, failed }
+  return { generated, failed, skippedOld }
 }

@@ -43,7 +43,8 @@ CREATE TABLE IF NOT EXISTS sources (
   category TEXT NOT NULL DEFAULT '',
   raw_text TEXT NOT NULL,
   fetched_at TEXT NOT NULL,
-  processed_at TEXT
+  processed_at TEXT,
+  resource_created_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS articles (
@@ -81,6 +82,9 @@ function migrate(database: Database.Database): void {
   const sourceColumns = database.prepare('PRAGMA table_info(sources)').all() as { name: string }[]
   if (!sourceColumns.some((c) => c.name === 'category')) {
     database.exec("ALTER TABLE sources ADD COLUMN category TEXT NOT NULL DEFAULT ''")
+  }
+  if (!sourceColumns.some((c) => c.name === 'resource_created_at')) {
+    database.exec('ALTER TABLE sources ADD COLUMN resource_created_at TEXT')
   }
   const articleColumns = database.prepare('PRAGMA table_info(articles)').all() as { name: string }[]
   if (articleColumns.some((c) => c.name === 'title')) {

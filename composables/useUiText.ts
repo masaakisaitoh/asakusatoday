@@ -1,5 +1,6 @@
 import type { UiStringKey } from '../utils/i18n/uiStrings'
 import { UI_STRINGS } from '../utils/i18n/uiStrings'
+import { categoryLabelFor } from '../utils/i18n/categoryLabels'
 
 export function useUiText() {
   const { locale } = useArticleLocale()
@@ -14,5 +15,9 @@ export function useUiText() {
     return text
   }
 
-  return { t }
+  function categoryLabel(category: string): string {
+    return categoryLabelFor(locale.value, category)
+  }
+
+  return { t, categoryLabel }
 }

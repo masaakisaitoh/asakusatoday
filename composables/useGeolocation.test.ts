@@ -28,6 +28,25 @@ describe('useGeolocation', () => {
     expect(state.value).toEqual({ lat: 35.71, lng: 139.79, accuracy: 12, status: 'watching' })
   })
 
+  it('requests high-accuracy positioning so GPS is preferred over coarse network location', () => {
+    let capturedOptions: PositionOptions | undefined
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        watchPosition: (_success: PositionCallback, _error: PositionErrorCallback, options?: PositionOptions) => {
+          capturedOptions = options
+          return 1
+        },
+        clearWatch: () => {}
+      }
+    })
+
+    const { start } = useGeolocation()
+    start()
+
+    expect(capturedOptions?.enableHighAccuracy).toBe(true)
+  })
+
   it('sets status to denied when the error code is PERMISSION_DENIED', () => {
     let errorCallback: PositionErrorCallback = () => {}
     Object.defineProperty(navigator, 'geolocation', {

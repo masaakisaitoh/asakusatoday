@@ -39,9 +39,9 @@ function onLocaleChange(event: Event): void {
 </script>
 
 <template>
-  <div class="min-h-screen flex flex-col bg-washi text-ink-black">
+  <div class="h-dvh flex flex-col bg-washi text-ink-black">
     <header class="border-b border-default">
-      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+      <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
         <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold text-primary no-underline">
           <img src="/favicon.png" alt="" class="h-10 w-10 rounded-full" width="40" height="40" />
           <span>ASAKUSA TODAY</span>
@@ -64,7 +64,7 @@ function onLocaleChange(event: Event): void {
       <slot />
     </main>
     <footer class="border-t border-default">
-      <div class="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between text-sm text-muted">
+      <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between text-sm text-muted">
         <span>© ASAKUSA TODAY</span>
         <select
           class="rounded border border-default bg-default px-2 py-1 text-sm"

@@ -47,6 +47,16 @@ describe('articles API', async () => {
     db.prepare(
       `INSERT INTO article_translations (article_id, locale, title, body) VALUES (?, 'ja', '下書き記事', '下書き本文')`
     ).run(draftResult.lastInsertRowid)
+
+    const kuramaeResult = db
+      .prepare(
+        `INSERT INTO articles (status, category, published_at, created_at)
+         VALUES ('published', 'kuramae-area', ?, datetime('now'))`
+      )
+      .run('2025-12-31T00:00:00Z')
+    db.prepare(
+      `INSERT INTO article_translations (article_id, locale, title, body) VALUES (?, 'en', 'Kuramae Article', 'Kuramae body')`
+    ).run(kuramaeResult.lastInsertRowid)
   })
 
   afterAll(() => {
@@ -55,8 +65,21 @@ describe('articles API', async () => {
 
   it('lists only published articles, defaulting to en', async () => {
     const result: any = await $fetch('/api/articles')
-    expect(result.articles).toHaveLength(1)
+    expect(result.articles).toHaveLength(2)
     expect(result.articles[0].title).toBe('Published Article')
+  })
+
+  it('filters the list to only the requested category', async () => {
+    const result: any = await $fetch('/api/articles?category=kuramae-area')
+    expect(result.articles).toHaveLength(1)
+    expect(result.articles[0].title).toBe('Kuramae Article')
+    expect(result.total).toBe(1)
+  })
+
+  it('returns no articles for a category with no published matches', async () => {
+    const result: any = await $fetch('/api/articles?category=ryogoku-area')
+    expect(result.articles).toHaveLength(0)
+    expect(result.total).toBe(0)
   })
 
   it('returns the ja title when lang=ja is requested', async () => {

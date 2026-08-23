@@ -5,6 +5,7 @@ export default defineEventHandler((event) => {
   const query = getQuery(event)
   const page = Number(query.page) || 1
   const locale = normalizeLocale(query.lang)
+  const category = typeof query.category === 'string' && query.category.length > 0 ? query.category : undefined
   const db = useDb()
-  return listPublishedArticles(db, page, locale)
+  return listPublishedArticles(db, page, locale, category)
 })

@@ -1,0 +1,117 @@
+import type { TranslationLocale } from '../../server/utils/articles'
+import type { SourceCategory } from '../../server/config/sources'
+
+export const CATEGORY_LABELS: Record<TranslationLocale, Record<SourceCategory, string>> = {
+  ja: {
+    'disaster-prevention': '防災',
+    'asakusa-area': '浅草エリア',
+    'asakusa-culture': '浅草文化',
+    'kappabashi-area': 'かっぱ橋エリア',
+    'shitaya-area': '下谷エリア',
+    'shin-okachimachi-area': '新御徒町エリア',
+    'kuramae-area': '蔵前エリア',
+    'oshiage-area': '押上エリア',
+    'asakusabashi-area': '浅草橋エリア',
+    'akihabara-area': '秋葉原エリア',
+    'ueno-okachimachi-area': '上野・御徒町エリア',
+    'ueno-okachimachi-culture': '上野・御徒町文化',
+    'ameyoko-area': 'アメ横エリア',
+    'ryogoku-area': '両国エリア',
+    'minowa-area': '三ノ輪エリア',
+    'yanesen-area': '谷根千エリア'
+  },
+  en: {
+    'disaster-prevention': 'Disaster Prevention',
+    'asakusa-area': 'Asakusa Area',
+    'asakusa-culture': 'Asakusa Culture',
+    'kappabashi-area': 'Kappabashi Area',
+    'shitaya-area': 'Shitaya Area',
+    'shin-okachimachi-area': 'Shin-Okachimachi Area',
+    'kuramae-area': 'Kuramae Area',
+    'oshiage-area': 'Oshiage Area',
+    'asakusabashi-area': 'Asakusabashi Area',
+    'akihabara-area': 'Akihabara Area',
+    'ueno-okachimachi-area': 'Ueno-Okachimachi Area',
+    'ueno-okachimachi-culture': 'Ueno-Okachimachi Culture',
+    'ameyoko-area': 'Ameyoko Area',
+    'ryogoku-area': 'Ryogoku Area',
+    'minowa-area': 'Minowa Area',
+    'yanesen-area': 'Yanesen Area'
+  },
+  ko: {
+    'disaster-prevention': '방재',
+    'asakusa-area': '아사쿠사 지역',
+    'asakusa-culture': '아사쿠사 문화',
+    'kappabashi-area': '갓파바시 지역',
+    'shitaya-area': '시타야 지역',
+    'shin-okachimachi-area': '신오카치마치 지역',
+    'kuramae-area': '구라마에 지역',
+    'oshiage-area': '오시아게 지역',
+    'asakusabashi-area': '아사쿠사바시 지역',
+    'akihabara-area': '아키하바라 지역',
+    'ueno-okachimachi-area': '우에노·오카치마치 지역',
+    'ueno-okachimachi-culture': '우에노·오카치마치 문화',
+    'ameyoko-area': '아메요코 지역',
+    'ryogoku-area': '료고쿠 지역',
+    'minowa-area': '미노와 지역',
+    'yanesen-area': '야네센 지역'
+  },
+  'zh-Hant': {
+    'disaster-prevention': '防災',
+    'asakusa-area': '淺草地區',
+    'asakusa-culture': '淺草文化',
+    'kappabashi-area': '合羽橋地區',
+    'shitaya-area': '下谷地區',
+    'shin-okachimachi-area': '新御徒町地區',
+    'kuramae-area': '藏前地區',
+    'oshiage-area': '押上地區',
+    'asakusabashi-area': '淺草橋地區',
+    'akihabara-area': '秋葉原地區',
+    'ueno-okachimachi-area': '上野・御徒町地區',
+    'ueno-okachimachi-culture': '上野・御徒町文化',
+    'ameyoko-area': '阿美橫丁地區',
+    'ryogoku-area': '兩國地區',
+    'minowa-area': '三之輪地區',
+    'yanesen-area': '谷根千地區'
+  },
+  'zh-Hans': {
+    'disaster-prevention': '防灾',
+    'asakusa-area': '浅草地区',
+    'asakusa-culture': '浅草文化',
+    'kappabashi-area': '合羽桥地区',
+    'shitaya-area': '下谷地区',
+    'shin-okachimachi-area': '新御徒町地区',
+    'kuramae-area': '藏前地区',
+    'oshiage-area': '押上地区',
+    'asakusabashi-area': '浅草桥地区',
+    'akihabara-area': '秋叶原地区',
+    'ueno-okachimachi-area': '上野・御徒町地区',
+    'ueno-okachimachi-culture': '上野・御徒町文化',
+    'ameyoko-area': '阿美横丁地区',
+    'ryogoku-area': '两国地区',
+    'minowa-area': '三之轮地区',
+    'yanesen-area': '谷根千地区'
+  },
+  pt: {
+    'disaster-prevention': 'Prevenção de Desastres',
+    'asakusa-area': 'Área de Asakusa',
+    'asakusa-culture': 'Cultura de Asakusa',
+    'kappabashi-area': 'Área de Kappabashi',
+    'shitaya-area': 'Área de Shitaya',
+    'shin-okachimachi-area': 'Área de Shin-Okachimachi',
+    'kuramae-area': 'Área de Kuramae',
+    'oshiage-area': 'Área de Oshiage',
+    'asakusabashi-area': 'Área de Asakusabashi',
+    'akihabara-area': 'Área de Akihabara',
+    'ueno-okachimachi-area': 'Área de Ueno-Okachimachi',
+    'ueno-okachimachi-culture': 'Cultura de Ueno-Okachimachi',
+    'ameyoko-area': 'Área de Ameyoko',
+    'ryogoku-area': 'Área de Ryogoku',
+    'minowa-area': 'Área de Minowa',
+    'yanesen-area': 'Área de Yanesen'
+  }
+}
+
+export function categoryLabelFor(locale: TranslationLocale, category: string): string {
+  return CATEGORY_LABELS[locale][category as SourceCategory] ?? category
+}

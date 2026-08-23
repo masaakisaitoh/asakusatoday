@@ -94,29 +94,33 @@ export interface ArticleListResult {
   pageSize: number
 }
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 5
 
 const ARTICLE_COLUMNS_SQL = 'id, image_url, status, category, published_at, created_at'
 
 export function listPublishedArticles(
   db: Database.Database,
   page: number,
-  locale: TranslationLocale
+  locale: TranslationLocale,
+  category?: string
 ): ArticleListResult {
   const safePage = page < 1 ? 1 : page
   const offset = (safePage - 1) * PAGE_SIZE
 
+  const whereClause = category ? `status = 'published' AND category = ?` : `status = 'published'`
+  const whereParams = category ? [category] : []
+
   const total = (
-    db.prepare(`SELECT COUNT(*) as count FROM articles WHERE status = 'published'`).get() as {
+    db.prepare(`SELECT COUNT(*) as count FROM articles WHERE ${whereClause}`).get(...whereParams) as {
       count: number
     }
   ).count
 
   const articleColumns = db
     .prepare(
-      `SELECT ${ARTICLE_COLUMNS_SQL} FROM articles WHERE status = 'published' ORDER BY published_at DESC LIMIT ? OFFSET ?`
+      `SELECT ${ARTICLE_COLUMNS_SQL} FROM articles WHERE ${whereClause} ORDER BY published_at DESC LIMIT ? OFFSET ?`
     )
-    .all(PAGE_SIZE, offset) as ArticleColumns[]
+    .all(...whereParams, PAGE_SIZE, offset) as ArticleColumns[]
 
   const withTranslations = attachArticleTranslations(db, articleColumns, locale)
   return { articles: attachArticleSources(db, withTranslations), total, page: safePage, pageSize: PAGE_SIZE }
