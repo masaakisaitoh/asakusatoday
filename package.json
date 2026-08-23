@@ -13,10 +13,12 @@
     "@anthropic-ai/sdk": "^0.117.1",
     "@dicebear/collection": "^9.2.0",
     "@dicebear/core": "^9.2.0",
+    "@maplibre/maplibre-gl-leaflet": "^0.1.4",
     "@nuxt/ui": "^3.3.7",
     "better-sqlite3": "^11.3.0",
     "cheerio": "^1.2.0",
     "leaflet": "^1.9.4",
+    "maplibre-gl": "^6.5.0",
     "symbol-sdk": "npm:@nemnesia/symbol-sdk@^3.3.2-pure.2",
     "zod": "^3.23.8"
   },

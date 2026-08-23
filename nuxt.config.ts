@@ -2,7 +2,12 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-08-13',
   devtools: { enabled: false },
   modules: ['@nuxt/ui'],
-  css: ['~/assets/css/main.css', 'leaflet/dist/leaflet.css'],
+  css: ['~/assets/css/main.css', 'leaflet/dist/leaflet.css', 'maplibre-gl/dist/maplibre-gl.css'],
+  runtimeConfig: {
+    public: {
+      maptilerKey: process.env.MAPTILER_KEY ?? ''
+    }
+  },
   app: {
     head: {
       link: [
