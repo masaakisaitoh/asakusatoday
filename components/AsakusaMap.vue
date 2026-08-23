@@ -8,6 +8,8 @@ const { locale } = useArticleLocale()
 const ASAKUSA_CENTER: [number, number] = [35.7148, 139.7967]
 const DEFAULT_ZOOM = 16
 const LOCATION_BLUE = '#4285f4'
+const MAP_ATTRIBUTION =
+  '<a href="https://www.maptiler.com/copyright/" target="_blank">&copy; MapTiler</a> <a href="https://www.openstreetmap.org/copyright" target="_blank">&copy; OpenStreetMap contributors</a>'
 
 const mapContainer = ref<HTMLElement | null>(null)
 const { state: geo, start: startGeolocation, stop: stopGeolocation } = useGeolocation()
@@ -16,21 +18,34 @@ let map: import('leaflet').Map | null = null
 let userMarker: import('leaflet').CircleMarker | null = null
 let accuracyCircle: import('leaflet').Circle | null = null
 let pulseMarker: import('leaflet').Marker | null = null
-let tileLayer: import('leaflet').TileLayer | null = null
+let glLayer: import('leaflet').MaplibreGL | null = null
+let glMap: import('maplibre-gl').Map | null = null
 
 function mapLocaleToTileLang(value: string): string {
   switch (value) {
     case 'zh-Hant':
-      return 'zh-hant'
+      return 'zh-Hant'
     case 'zh-Hans':
-      return 'zh-hans'
+      return 'zh-Hans'
     default:
       return value
   }
 }
 
-function tileUrlFor(lang: string): string {
-  return `https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png?lang=${lang}`
+function styleUrl(): string {
+  const config = useRuntimeConfig()
+  return `https://api.maptiler.com/maps/streets-v2/style.json?key=${config.public.maptilerKey}`
+}
+
+function applyMapLanguage(glMap: import('maplibre-gl').Map, lang: string): void {
+  const style = glMap.getStyle()
+  if (!style?.layers) return
+  for (const layer of style.layers) {
+    if (layer.type !== 'symbol') continue
+    const textField = glMap.getLayoutProperty(layer.id, 'text-field')
+    if (textField === undefined) continue
+    glMap.setLayoutProperty(layer.id, 'text-field', ['coalesce', ['get', `name:${lang}`], ['get', 'name']])
+  }
 }
 
 function pulseIcon(L: typeof import('leaflet')): import('leaflet').DivIcon {
@@ -44,8 +59,21 @@ function pulseIcon(L: typeof import('leaflet')): import('leaflet').DivIcon {
 
 onMounted(async () => {
   const L = await import('leaflet')
+  const { maplibreGL } = await import('@maplibre/maplibre-gl-leaflet')
+  const { setWorkerUrl } = await import('maplibre-gl')
+  const { default: workerUrl } = await import('maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url')
+  setWorkerUrl(workerUrl)
   if (!mapContainer.value) return
-  map = L.map(mapContainer.value, { zoomControl: false }).setView(ASAKUSA_CENTER, DEFAULT_ZOOM)
+  map = L.map(mapContainer.value, {
+    zoomControl: false,
+    maxBounds: [
+      [180, -Infinity],
+      [-180, Infinity]
+    ],
+    maxBoundsViscosity: 1,
+    minZoom: 1,
+    maxZoom: 20
+  }).setView(ASAKUSA_CENTER, DEFAULT_ZOOM)
   map.createPane('pulsePane')
   const pulsePane = map.getPane('pulsePane')
   if (pulsePane) {
@@ -54,12 +82,16 @@ onMounted(async () => {
   }
   L.control.zoom({ position: 'topright' }).addTo(map)
   map.attributionControl.setPrefix(false)
+  map.attributionControl.addAttribution(MAP_ATTRIBUTION)
 
-  tileLayer = L.tileLayer(tileUrlFor(mapLocaleToTileLang(locale.value)), {
-    attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19,
-    referrerPolicy: 'no-referrer'
-  }).addTo(map)
+  glLayer = maplibreGL({ style: styleUrl(), attributionControl: false }).addTo(map)
+  glMap = glLayer.getMaplibreMap()
+  glMap.on('load', () => {
+    if (glMap) applyMapLanguage(glMap, mapLocaleToTileLang(locale.value))
+  })
+  glMap.on('error', (e) => {
+    console.error('MapLibre GL map error:', e.error)
+  })
 
   startGeolocation()
 })
@@ -71,7 +103,9 @@ onUnmounted(() => {
 })
 
 watch(locale, (newLocale) => {
-  tileLayer?.setUrl(tileUrlFor(mapLocaleToTileLang(newLocale)))
+  if (glMap && glMap.isStyleLoaded()) {
+    applyMapLanguage(glMap, mapLocaleToTileLang(newLocale))
+  }
 })
 
 watch(
