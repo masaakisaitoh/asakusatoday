@@ -45,6 +45,7 @@ export type UiStringKey =
   | 'profile.themeSystem'
   | 'index.newsTitle'
   | 'index.noArticles'
+  | 'index.clearFilter'
   | 'article.notFound'
   | 'article.source'
   | 'article.sources'
@@ -99,6 +100,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.themeSystem': 'System',
     'index.newsTitle': 'NEWS',
     'index.noArticles': 'No articles yet.',
+    'index.clearFilter': 'Show all articles',
     'article.notFound': 'Article not found',
     'article.source': 'Source:',
     'article.sources': 'Sources:',
@@ -152,6 +154,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.themeSystem': 'システム設定に合わせる',
     'index.newsTitle': 'ニュース',
     'index.noArticles': 'まだ記事がありません。',
+    'index.clearFilter': 'すべての記事を表示',
     'article.notFound': '記事が見つかりません',
     'article.source': '出典:',
     'article.sources': '出典:',
@@ -205,6 +208,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.themeSystem': '시스템 설정 사용',
     'index.newsTitle': '뉴스',
     'index.noArticles': '아직 기사가 없습니다.',
+    'index.clearFilter': '모든 기사 보기',
     'article.notFound': '기사를 찾을 수 없습니다',
     'article.source': '출처:',
     'article.sources': '출처:',
@@ -258,6 +262,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.themeSystem': '跟隨系統設定',
     'index.newsTitle': '新聞',
     'index.noArticles': '尚無文章。',
+    'index.clearFilter': '顯示所有文章',
     'article.notFound': '找不到文章',
     'article.source': '來源：',
     'article.sources': '來源：',
@@ -311,6 +316,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.themeSystem': '跟随系统设置',
     'index.newsTitle': '新闻',
     'index.noArticles': '暂无文章。',
+    'index.clearFilter': '显示所有文章',
     'article.notFound': '未找到文章',
     'article.source': '来源：',
     'article.sources': '来源：',
@@ -364,6 +370,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'profile.themeSystem': 'Usar configuração do sistema',
     'index.newsTitle': 'NOTÍCIAS',
     'index.noArticles': 'Ainda não há artigos.',
+    'index.clearFilter': 'Ver todos os artigos',
     'article.notFound': 'Artigo não encontrado',
     'article.source': 'Fonte:',
     'article.sources': 'Fontes:',

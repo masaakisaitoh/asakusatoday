@@ -25,13 +25,28 @@ describe('buildGenerationPrompt', () => {
     expect(prompt).toContain('ですます調')
     expect(prompt).toContain('簡潔')
   })
+
+  it('instructs extracting the source publish date and stating it in the body', async () => {
+    const { buildGenerationPrompt } = await import('./generator')
+    const prompt = buildGenerationPrompt([
+      { siteName: 'a', url: 'https://a.example/', rawText: 'text' }
+    ])
+    expect(prompt).toContain('sourceDate')
+    expect(prompt).toContain('本文中に')
+  })
 })
 
 describe('parseGeneratedArticle', () => {
   it('parses a valid JSON response', async () => {
     const { parseGeneratedArticle } = await import('./generator')
     const result = parseGeneratedArticle('{"title": "タイトル", "body": "本文"}')
-    expect(result).toEqual({ title: 'タイトル', body: '本文' })
+    expect(result).toEqual({ title: 'タイトル', body: '本文', sourceDate: null })
+  })
+
+  it('parses the sourceDate field when present', async () => {
+    const { parseGeneratedArticle } = await import('./generator')
+    const result = parseGeneratedArticle('{"title": "タイトル", "body": "本文", "sourceDate": "2026-08-24"}')
+    expect(result).toEqual({ title: 'タイトル', body: '本文', sourceDate: '2026-08-24' })
   })
 
   it('throws when the shape is invalid', async () => {
@@ -55,7 +70,7 @@ describe('generateArticleFromSources', () => {
     const article = await generateArticleFromSources(client, [
       { siteName: 'e-asakusa.jp', url: 'https://e-asakusa.jp/', rawText: '元テキスト' }
     ])
-    expect(article).toEqual({ title: '生成タイトル', body: '生成本文' })
+    expect(article).toEqual({ title: '生成タイトル', body: '生成本文', sourceDate: null })
   })
 
   it('requests enough max_tokens to leave room for extended thinking without truncating output', async () => {
@@ -175,7 +190,7 @@ describe('generateDraftsForUnprocessedSources', () => {
     const client = fakeGenerateAndTranslateClient()
     const result = await generateDraftsForUnprocessedSources(db, client)
 
-    expect(result).toEqual({ generated: 2, failed: 0 })
+    expect(result).toEqual({ generated: 2, failed: 0, skippedOld: 0 })
 
     const articles = db.prepare(`SELECT * FROM articles`).all() as any[]
     expect(articles).toHaveLength(2)
@@ -226,7 +241,7 @@ describe('generateDraftsForUnprocessedSources', () => {
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
-    expect(result).toEqual({ generated: 1, failed: 1 })
+    expect(result).toEqual({ generated: 1, failed: 1, skippedOld: 0 })
     const failingSource = db.prepare(`SELECT processed_at FROM sources WHERE url = ?`).get('https://a.example/') as any
     expect(failingSource.processed_at).toBeNull()
     const succeedingSource = db.prepare(`SELECT processed_at FROM sources WHERE url = ?`).get('https://c.example/') as any
@@ -250,7 +265,7 @@ describe('generateDraftsForUnprocessedSources', () => {
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
-    expect(result).toEqual({ generated: 0, failed: 0 })
+    expect(result).toEqual({ generated: 0, failed: 0, skippedOld: 0 })
     expect(create).not.toHaveBeenCalled()
     const articles = db.prepare(`SELECT * FROM articles`).all()
     expect(articles).toHaveLength(0)
@@ -308,12 +323,73 @@ describe('generateDraftsForUnprocessedSources', () => {
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
-    expect(result).toEqual({ generated: 0, failed: 1 })
+    expect(result).toEqual({ generated: 0, failed: 1, skippedOld: 0 })
     const articles = db.prepare(`SELECT * FROM articles`).all()
     expect(articles).toHaveLength(0)
     const translations = db.prepare(`SELECT * FROM article_translations`).all()
     expect(translations).toHaveLength(0)
     const source = db.prepare(`SELECT processed_at FROM sources WHERE url = ?`).get('https://a.example/') as any
     expect(source.processed_at).toBeNull()
+  })
+
+  it('skips a source whose extracted date is before the 2026-08-24 cutoff, without creating an article', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://old.example/', 'old', 'asakusa-area', '本文Old')
+
+    const client: MessageClient = {
+      messages: {
+        create: async () => ({
+          content: [{ type: 'text', text: '{"title": "旧タイトル", "body": "旧本文", "sourceDate": "2026-08-20"}' }]
+        })
+      }
+    }
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const result = await generateDraftsForUnprocessedSources(db, client)
+
+    expect(result).toEqual({ generated: 0, failed: 0, skippedOld: 1 })
+    const articles = db.prepare(`SELECT * FROM articles`).all()
+    expect(articles).toHaveLength(0)
+    const source = db
+      .prepare(`SELECT processed_at, resource_created_at FROM sources WHERE url = ?`)
+      .get('https://old.example/') as any
+    expect(source.processed_at).not.toBeNull()
+    expect(source.resource_created_at).toBe('2026-08-20')
+  })
+
+  it('generates and stores the extracted date when it is on or after the cutoff', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://new.example/', 'new', 'asakusa-area', '本文New')
+
+    const client: MessageClient = {
+      messages: {
+        create: async (params) => {
+          const content = params.messages[0].content
+          if (content.includes('タイトル：')) {
+            return { content: [{ type: 'text', text: TRANSLATION_JSON }] }
+          }
+          return {
+            content: [{ type: 'text', text: '{"title": "新タイトル", "body": "新本文", "sourceDate": "2026-08-24"}' }]
+          }
+        }
+      }
+    }
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const result = await generateDraftsForUnprocessedSources(db, client)
+
+    expect(result).toEqual({ generated: 1, failed: 0, skippedOld: 0 })
+    const source = db
+      .prepare(`SELECT resource_created_at FROM sources WHERE url = ?`)
+      .get('https://new.example/') as any
+    expect(source.resource_created_at).toBe('2026-08-24')
   })
 })

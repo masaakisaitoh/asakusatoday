@@ -31,7 +31,8 @@ export function useGeolocation(): {
       },
       (error) => {
         state.value = { ...state.value, status: error.code === error.PERMISSION_DENIED ? 'denied' : 'error' }
-      }
+      },
+      { enableHighAccuracy: true }
     )
   }
 

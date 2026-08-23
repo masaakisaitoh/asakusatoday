@@ -3,7 +3,7 @@ const { t } = useUiText()
 </script>
 
 <template>
-  <div class="min-h-full flex items-center justify-center px-4 py-12">
+  <div class="h-full overflow-y-auto flex items-center justify-center px-4 py-12">
     <UCard class="w-full max-w-sm">
       <template #header>
         <h1 class="text-lg font-bold text-center">{{ t('login.title') }}</h1>

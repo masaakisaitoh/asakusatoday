@@ -144,7 +144,7 @@ async function onSubmit(event: FormSubmitEvent<typeof formState.value>): Promise
 </script>
 
 <template>
-  <div v-if="user" class="max-w-2xl mx-auto px-4 py-8">
+  <div v-if="user" class="h-full overflow-y-auto max-w-2xl mx-auto px-4 py-8">
     <UCard>
       <div v-if="mode === 'view'" class="flex flex-col gap-4">
         <div class="flex items-center gap-4">
