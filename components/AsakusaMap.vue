@@ -57,7 +57,8 @@ onMounted(async () => {
 
   tileLayer = L.tileLayer(tileUrlFor(mapLocaleToTileLang(locale.value)), {
     attribution: '&copy; OpenStreetMap contributors',
-    maxZoom: 19
+    maxZoom: 19,
+    referrerPolicy: 'no-referrer'
   }).addTo(map)
 
   startGeolocation()
