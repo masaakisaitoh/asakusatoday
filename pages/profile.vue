@@ -5,6 +5,7 @@ import type { FormSubmitEvent } from '@nuxt/ui'
 import { COUNTRIES } from '../utils/countries'
 
 const { t } = useUiText()
+useSeoMeta({ title: 'Profile', robots: 'noindex, nofollow' })
 const { data: user, refresh, error } = await useFetch('/api/user/me', { key: 'current-user' })
 
 if (error.value) {

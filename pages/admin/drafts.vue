@@ -1,4 +1,5 @@
 <script setup lang="ts">
+useSeoMeta({ title: 'Draft Review', robots: 'noindex, nofollow' })
 const { data: drafts, error, refresh } = await useFetch('/api/admin/drafts')
 
 async function publish(id: number) {

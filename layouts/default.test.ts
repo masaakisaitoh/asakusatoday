@@ -31,6 +31,8 @@ function stubUseState(user: { avatar_seed: string; user_name: string } | null = 
   vi.stubGlobal('useArticleLocale', useArticleLocale)
   vi.stubGlobal('useUiText', useUiText)
   vi.stubGlobal('useFetch', () => ({ data: ref(user) }))
+  vi.stubGlobal('useHead', vi.fn())
+  vi.stubGlobal('useRuntimeConfig', () => ({ public: { siteUrl: 'https://asakusatoday.com' } }))
   const fetchMock = vi.fn()
   const navigateMock = vi.fn()
   vi.stubGlobal('$fetch', fetchMock)

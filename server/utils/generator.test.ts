@@ -332,7 +332,7 @@ describe('generateDraftsForUnprocessedSources', () => {
     expect(source.processed_at).toBeNull()
   })
 
-  it('skips a source whose extracted date is before the 2026-08-24 cutoff, without creating an article', async () => {
+  it('skips a source whose extracted date is before the 2026-07-03 cutoff, without creating an article', async () => {
     process.env.DATABASE_PATH = ':memory:'
     const { useDb, resetDbForTests } = await import('./db')
     resetDbForTests()
@@ -344,7 +344,7 @@ describe('generateDraftsForUnprocessedSources', () => {
     const client: MessageClient = {
       messages: {
         create: async () => ({
-          content: [{ type: 'text', text: '{"title": "旧タイトル", "body": "旧本文", "sourceDate": "2026-08-20"}' }]
+          content: [{ type: 'text', text: '{"title": "旧タイトル", "body": "旧本文", "sourceDate": "2026-06-30"}' }]
         })
       }
     }
@@ -358,7 +358,7 @@ describe('generateDraftsForUnprocessedSources', () => {
       .prepare(`SELECT processed_at, resource_created_at FROM sources WHERE url = ?`)
       .get('https://old.example/') as any
     expect(source.processed_at).not.toBeNull()
-    expect(source.resource_created_at).toBe('2026-08-20')
+    expect(source.resource_created_at).toBe('2026-06-30')
   })
 
   it('generates and stores the extracted date when it is on or after the cutoff', async () => {
@@ -378,7 +378,7 @@ describe('generateDraftsForUnprocessedSources', () => {
             return { content: [{ type: 'text', text: TRANSLATION_JSON }] }
           }
           return {
-            content: [{ type: 'text', text: '{"title": "新タイトル", "body": "新本文", "sourceDate": "2026-08-24"}' }]
+            content: [{ type: 'text', text: '{"title": "新タイトル", "body": "新本文", "sourceDate": "2026-07-03"}' }]
           }
         }
       }
@@ -390,6 +390,6 @@ describe('generateDraftsForUnprocessedSources', () => {
     const source = db
       .prepare(`SELECT resource_created_at FROM sources WHERE url = ?`)
       .get('https://new.example/') as any
-    expect(source.resource_created_at).toBe('2026-08-24')
+    expect(source.resource_created_at).toBe('2026-07-03')
   })
 })

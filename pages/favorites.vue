@@ -5,6 +5,7 @@ const route = useRoute()
 const router = useRouter()
 const { locale } = useArticleLocale()
 const { t } = useUiText()
+useSeoMeta({ title: 'Favorites', robots: 'noindex, nofollow' })
 
 const page = computed({
   get: () => Number(route.query.page) || 1,

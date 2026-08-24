@@ -8,6 +8,12 @@ const router = useRouter()
 const { locale } = useArticleLocale()
 const { t, categoryLabel } = useUiText()
 
+const config = useRuntimeConfig()
+useSeoMeta({
+  title: 'Local News from Asakusa',
+  ogUrl: `${config.public.siteUrl}/`
+})
+
 const pageRoot = ref<HTMLElement | null>(null)
 const transitionDirection = useState<'forward' | 'back'>('swipeTransitionDirection', () => 'forward')
 

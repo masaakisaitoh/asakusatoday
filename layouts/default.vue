@@ -1,9 +1,25 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { SUPPORTED_LOCALES, type TranslationLocale } from '../server/utils/articles'
+import { safeJsonLd } from '../utils/seo'
 
 const { locale, setLocale, loadStoredLocale } = useArticleLocale()
 const { t } = useUiText()
+
+const config = useRuntimeConfig()
+useHead({
+  script: [
+    {
+      type: 'application/ld+json',
+      innerHTML: safeJsonLd({
+        '@context': 'https://schema.org',
+        '@type': 'WebSite',
+        name: 'ASAKUSA TODAY',
+        url: config.public.siteUrl
+      })
+    }
+  ]
+})
 
 const localeLabels: Record<TranslationLocale, string> = {
   ja: '日本語',
