@@ -15,7 +15,7 @@ export interface GeneratedArticle extends ArticleText {
   sourceDate: string | null
 }
 
-const MIN_SOURCE_DATE = '2026-08-24'
+const MIN_SOURCE_DATE = '2026-07-03'
 
 export type TranslatedLocale = 'en' | 'ko' | 'zh-Hant' | 'zh-Hans' | 'pt'
 
