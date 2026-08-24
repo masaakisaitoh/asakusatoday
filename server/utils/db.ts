@@ -69,6 +69,13 @@ CREATE TABLE IF NOT EXISTS article_sources (
   source_id INTEGER NOT NULL REFERENCES sources(id),
   PRIMARY KEY (article_id, source_id)
 );
+
+CREATE TABLE IF NOT EXISTS favorites (
+  user_id INTEGER NOT NULL REFERENCES users(id),
+  article_id INTEGER NOT NULL REFERENCES articles(id),
+  created_at TEXT NOT NULL,
+  PRIMARY KEY (user_id, article_id)
+);
 `
 
 function migrate(database: Database.Database): void {

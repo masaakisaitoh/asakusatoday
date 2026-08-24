@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, watch } from 'vue'
+
 const route = useRoute()
 const { locale } = useArticleLocale()
 const { t, categoryLabel } = useUiText()
@@ -10,6 +12,33 @@ const { data: article, error } = await useFetch(`/api/articles/${route.params.id
 if (error.value) {
   throw createError({ statusCode: error.value.statusCode || 404, statusMessage: t('article.notFound') })
 }
+
+const { data: user } = useFetch('/api/user/me', { key: 'current-user' })
+
+const favorited = ref(article.value?.is_favorited ?? false)
+watch(article, (value) => {
+  if (value) favorited.value = value.is_favorited
+})
+
+const togglingFavorite = ref(false)
+
+async function toggleFavorite(): Promise<void> {
+  if (!user.value) {
+    await navigateTo('/login')
+    return
+  }
+  togglingFavorite.value = true
+  try {
+    const result = await $fetch(`/api/articles/${route.params.id}/favorite`, { method: 'POST' })
+    favorited.value = result.favorited
+  } catch (e: any) {
+    if (e?.statusCode === 401) {
+      await navigateTo('/login')
+    }
+  } finally {
+    togglingFavorite.value = false
+  }
+}
 </script>
 
 <template>
@@ -18,15 +47,38 @@ if (error.value) {
       <template v-if="article.image_url" #header>
         <img :src="article.image_url" :alt="article.title" class="w-full aspect-video object-cover">
       </template>
-      <UBadge
-        color="secondary"
-        variant="subtle"
-        size="sm"
-        class="mb-2 cursor-pointer hover:brightness-95"
-        @click="navigateTo({ path: '/', query: { category: article.category } })"
-      >
-        {{ categoryLabel(article.category) }}
-      </UBadge>
+      <div class="flex items-center justify-between mb-2">
+        <UBadge
+          color="secondary"
+          variant="subtle"
+          size="sm"
+          class="cursor-pointer hover:brightness-95"
+          @click="navigateTo({ path: '/', query: { category: article.category } })"
+        >
+          {{ categoryLabel(article.category) }}
+        </UBadge>
+        <button
+          type="button"
+          class="p-2 min-h-11 min-w-11 flex items-center justify-center disabled:opacity-50"
+          :aria-label="favorited ? t('article.removeFavorite') : t('article.addFavorite')"
+          :aria-pressed="favorited"
+          :disabled="togglingFavorite"
+          @click="toggleFavorite"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            class="h-6 w-6"
+            :class="favorited ? 'fill-primary stroke-primary' : 'fill-none stroke-current text-muted'"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path
+              d="M12 21s-6.72-4.35-9.33-8.28C1.05 10.36 1.53 7.02 4.24 5.32c2.2-1.38 5-.86 6.53 1.13L12 8.1l1.23-1.65c1.53-1.99 4.33-2.51 6.53-1.13 2.71 1.7 3.19 5.04 1.57 7.4C18.72 16.65 12 21 12 21z"
+            />
+          </svg>
+        </button>
+      </div>
       <h1 class="text-3xl font-bold text-highlighted mb-2">{{ article.title }}</h1>
       <time class="text-sm text-muted">{{ article.published_at }}</time>
       <p class="mt-6 leading-relaxed whitespace-pre-wrap">{{ article.body }}</p>

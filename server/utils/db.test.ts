@@ -210,4 +210,37 @@ describe('useDb', () => {
 
     rmSync(dir, { recursive: true, force: true })
   })
+
+  it('creates a favorites table with a composite primary key on user_id and article_id', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((row: any) => row.name)
+    expect(tables).toContain('favorites')
+
+    db.prepare(
+      `INSERT INTO users (address, public_key, user_name, avatar_seed, created_at)
+       VALUES ('addr-fav', 'pub-fav', 'FavUser000000001', 'seed-fav', datetime('now'))`
+    ).run()
+    const user = db.prepare('SELECT id FROM users WHERE address = ?').get('addr-fav') as { id: number }
+    const article = db
+      .prepare(
+        `INSERT INTO articles (status, category, created_at) VALUES ('published', 'traffic', datetime('now'))`
+      )
+      .run()
+    const articleId = article.lastInsertRowid as number
+
+    db.prepare(`INSERT INTO favorites (user_id, article_id, created_at) VALUES (?, ?, datetime('now'))`).run(
+      user.id,
+      articleId
+    )
+    expect(() =>
+      db
+        .prepare(`INSERT INTO favorites (user_id, article_id, created_at) VALUES (?, ?, datetime('now'))`)
+        .run(user.id, articleId)
+    ).toThrow()
+  })
 })

@@ -1,12 +1,25 @@
 // @vitest-environment node
 import { describe, it, expect, beforeAll, afterAll } from 'vitest'
-import { setup, $fetch } from '@nuxt/test-utils/e2e'
+import { setup, $fetch, fetch as rawFetch } from '@nuxt/test-utils/e2e'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { generateAccount, signMessage } from '../../utils/symbolCrypto'
 
 const dbDir = mkdtempSync(join(tmpdir(), 'asakusa-articles-'))
 const dbPath = join(dbDir, 'test.sqlite3')
+
+async function loginAndGetCookie(): Promise<string> {
+  const account = generateAccount()
+  const { nonce } = await $fetch('/api/auth/nonce', { method: 'POST', body: { address: account.address } })
+  const signature = signMessage(account.privateKey, nonce)
+  const response = await rawFetch('/api/auth/verify', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ address: account.address, publicKey: account.publicKey, signature, nonce })
+  })
+  return (response.headers.get('set-cookie') ?? '').split(';')[0]
+}
 
 describe('articles API', async () => {
   await setup({ server: true, env: { DATABASE_PATH: dbPath } })
@@ -127,5 +140,33 @@ describe('articles API', async () => {
 
   it('404s for a nonexistent article id', async () => {
     await expect($fetch('/api/articles/999999')).rejects.toMatchObject({ statusCode: 404 })
+  })
+
+  it('includes is_favorited: false for a logged-out request', async () => {
+    const list: any = await $fetch('/api/articles')
+    const id = list.articles[0].id
+    const article: any = await $fetch(`/api/articles/${id}`)
+    expect(article.is_favorited).toBe(false)
+  })
+
+  it('includes is_favorited: true after the article is favorited', async () => {
+    const cookie = await loginAndGetCookie()
+    const list: any = await $fetch('/api/articles')
+    const id = list.articles[0].id
+    await $fetch(`/api/articles/${id}/favorite`, { method: 'POST', headers: { cookie } })
+
+    const article: any = await $fetch(`/api/articles/${id}`, { headers: { cookie } })
+    expect(article.is_favorited).toBe(true)
+  })
+
+  it('does not leak another user\'s favorite into is_favorited', async () => {
+    const cookieA = await loginAndGetCookie()
+    const cookieB = await loginAndGetCookie()
+    const list: any = await $fetch('/api/articles')
+    const id = list.articles[0].id
+    await $fetch(`/api/articles/${id}/favorite`, { method: 'POST', headers: { cookie: cookieA } })
+
+    const asB: any = await $fetch(`/api/articles/${id}`, { headers: { cookie: cookieB } })
+    expect(asB.is_favorited).toBe(false)
   })
 })

@@ -54,6 +54,24 @@ describe('normalizeLocale', () => {
   })
 })
 
+describe('parsePage', () => {
+  it('returns the value when it is a positive integer', async () => {
+    const { parsePage } = await import('./articles')
+    expect(parsePage(3)).toBe(3)
+    expect(parsePage('3')).toBe(3)
+  })
+
+  it('defaults to 1 for non-integer, zero, negative, or missing values', async () => {
+    const { parsePage } = await import('./articles')
+    expect(parsePage(1.5)).toBe(1)
+    expect(parsePage('1.5')).toBe(1)
+    expect(parsePage(0)).toBe(1)
+    expect(parsePage(-1)).toBe(1)
+    expect(parsePage(undefined)).toBe(1)
+    expect(parsePage('abc')).toBe(1)
+  })
+})
+
 describe('listPublishedArticles', () => {
   it('returns only published articles ordered by published_at desc', async () => {
     const { useDb, resetDbForTests } = await import('./db')
@@ -223,5 +241,36 @@ describe('getPublishedArticleById', () => {
     const { getPublishedArticleById } = await import('./articles')
     const article = getPublishedArticleById(db, id, 'ko')
     expect(article?.title).toBe('Japanese Only')
+  })
+})
+
+describe('publishedArticleExists', () => {
+  it('returns true for a published article', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const id = insertArticle(db)
+
+    const { publishedArticleExists } = await import('./articles')
+    expect(publishedArticleExists(db, id)).toBe(true)
+  })
+
+  it('returns false for a draft article', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const id = insertArticle(db, { status: 'draft' })
+
+    const { publishedArticleExists } = await import('./articles')
+    expect(publishedArticleExists(db, id)).toBe(false)
+  })
+
+  it('returns false for a nonexistent id', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+
+    const { publishedArticleExists } = await import('./articles')
+    expect(publishedArticleExists(db, 999999)).toBe(false)
   })
 })

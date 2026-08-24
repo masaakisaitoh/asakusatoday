@@ -90,6 +90,12 @@ describe('default layout', () => {
     expect(wrapper.text()).toContain('Log out')
   })
 
+  it('shows a favorites link in the dropdown when logged in', () => {
+    stubUseState({ avatar_seed: 'seed-1', user_name: 'tester' })
+    const wrapper = mount(DefaultLayout, { global: { stubs } })
+    expect(wrapper.text()).toContain('Favorites')
+  })
+
   it('logs out and redirects to /login when the logout item is selected', async () => {
     const { fetchMock, navigateMock } = stubUseState({ avatar_seed: 'seed-1', user_name: 'tester' })
     const wrapper = mount(DefaultLayout, { global: { stubs } })
