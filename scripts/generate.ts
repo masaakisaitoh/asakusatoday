@@ -1,6 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { useDb } from '../server/utils/db'
 import { generateDraftsForUnprocessedSources } from '../server/utils/generator'
+import { installTimestampedLogging } from '../server/utils/logger'
+
+installTimestampedLogging()
 
 async function main() {
   const db = useDb()

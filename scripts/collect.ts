@@ -1,6 +1,9 @@
 import { useDb } from '../server/utils/db'
 import { collectAllSources } from '../server/utils/collector'
 import { SOURCE_SITES } from '../server/config/sources'
+import { installTimestampedLogging } from '../server/utils/logger'
+
+installTimestampedLogging()
 
 async function main() {
   const db = useDb()
