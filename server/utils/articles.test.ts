@@ -199,6 +199,49 @@ describe('listPublishedArticles', () => {
   })
 })
 
+describe('listDraftArticles', () => {
+  it('returns only draft articles ordered by created_at desc', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    insertArticle(db, { title: 'Published', status: 'published' })
+    const older = insertArticle(db, { title: 'Older Draft', status: 'draft', publishedAt: null })
+    const newer = insertArticle(db, { title: 'Newer Draft', status: 'draft', publishedAt: null })
+    db.prepare(`UPDATE articles SET created_at = '2026-01-01T00:00:00Z' WHERE id = ?`).run(older)
+    db.prepare(`UPDATE articles SET created_at = '2026-02-01T00:00:00Z' WHERE id = ?`).run(newer)
+
+    const { listDraftArticles } = await import('./articles')
+    const result = listDraftArticles(db, 1, 'ja')
+
+    expect(result.total).toBe(2)
+    expect(result.articles.map((a) => a.title)).toEqual(['Newer Draft', 'Older Draft'])
+  })
+
+  it('paginates results at 5 per page', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    for (let i = 0; i < 12; i++) {
+      const id = insertArticle(db, { title: `Draft ${i}`, status: 'draft', publishedAt: null })
+      db.prepare(`UPDATE articles SET created_at = ? WHERE id = ?`).run(
+        `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
+        id
+      )
+    }
+
+    const { listDraftArticles } = await import('./articles')
+    const page1 = listDraftArticles(db, 1, 'ja')
+    const page2 = listDraftArticles(db, 2, 'ja')
+    const page3 = listDraftArticles(db, 3, 'ja')
+
+    expect(page1.articles).toHaveLength(5)
+    expect(page2.articles).toHaveLength(5)
+    expect(page3.articles).toHaveLength(2)
+    expect(page1.total).toBe(12)
+    expect(page1.pageSize).toBe(5)
+  })
+})
+
 describe('getPublishedArticleById', () => {
   it('returns undefined for a draft article', async () => {
     const { useDb, resetDbForTests } = await import('./db')

@@ -80,6 +80,7 @@ function onLocaleChange(event: Event): void {
     <main class="flex-1 min-h-0 flex flex-col relative overflow-hidden">
       <slot />
     </main>
+    <AdBanner />
     <footer class="border-t border-default">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between text-sm text-muted">
         <span>© ASAKUSA TODAY</span>

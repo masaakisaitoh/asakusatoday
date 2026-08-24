@@ -1,6 +1,21 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 useSeoMeta({ title: 'Draft Review', robots: 'noindex, nofollow' })
-const { data: drafts, error, refresh } = await useFetch('/api/admin/drafts')
+const route = useRoute()
+const router = useRouter()
+
+const page = computed({
+  get: () => Number(route.query.page) || 1,
+  set: (value: number) => {
+    router.push({ path: '/admin/drafts', query: { ...route.query, page: value } })
+  }
+})
+
+const { data, error, refresh } = await useFetch('/api/admin/drafts', {
+  query: { page },
+  watch: [page]
+})
 
 async function publish(id: number) {
   await $fetch(`/api/admin/drafts/${id}/publish`, { method: 'POST' })
@@ -18,8 +33,8 @@ async function reject(id: number) {
     <h1 class="text-2xl font-bold text-primary mb-6">Draft Review</h1>
     <p v-if="error" class="text-muted">You do not have access to this page.</p>
     <template v-else>
-      <p v-if="drafts && drafts.length === 0" class="text-muted">No drafts to review.</p>
-      <UCard v-for="draft in drafts" :key="draft.id" class="mb-4">
+      <p v-if="data && data.articles.length === 0" class="text-muted">No drafts to review.</p>
+      <UCard v-for="draft in data?.articles" :key="draft.id" class="mb-4">
         <h2 class="text-lg font-bold text-highlighted mb-2">{{ draft.title }}</h2>
         <p class="mb-4 whitespace-pre-wrap">{{ draft.body }}</p>
         <p class="text-sm text-muted mb-4">
@@ -33,6 +48,9 @@ async function reject(id: number) {
           <UButton variant="outline" @click="reject(draft.id)">Reject</UButton>
         </div>
       </UCard>
+      <div v-if="data && data.total > data.pageSize" class="flex justify-center mt-8">
+        <UPagination v-model:page="page" :total="data.total" :items-per-page="data.pageSize" />
+      </div>
     </template>
   </div>
 </template>
