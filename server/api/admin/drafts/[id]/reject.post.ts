@@ -20,6 +20,7 @@ export default defineEventHandler((event) => {
 
   db.prepare(`DELETE FROM article_sources WHERE article_id = ?`).run(id)
   db.prepare(`DELETE FROM article_translations WHERE article_id = ?`).run(id)
+  db.prepare(`DELETE FROM favorites WHERE article_id = ?`).run(id)
   db.prepare(`DELETE FROM articles WHERE id = ?`).run(id)
   return { ok: true }
 })

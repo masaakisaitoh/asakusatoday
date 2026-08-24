@@ -5,6 +5,7 @@ export type UiStringKey =
   | 'nav.logOut'
   | 'nav.profile'
   | 'nav.map'
+  | 'nav.favorites'
   | 'login.title'
   | 'login.createAccount'
   | 'login.loginExisting'
@@ -46,9 +47,13 @@ export type UiStringKey =
   | 'index.newsTitle'
   | 'index.noArticles'
   | 'index.clearFilter'
+  | 'favorites.title'
+  | 'favorites.empty'
   | 'article.notFound'
   | 'article.source'
   | 'article.sources'
+  | 'article.addFavorite'
+  | 'article.removeFavorite'
   | 'weather.summary'
   | 'map.enableLocation'
   | 'map.recenterAria'
@@ -59,6 +64,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'nav.logOut': 'Log out',
     'nav.profile': 'Profile',
     'nav.map': 'Map',
+    'nav.favorites': 'Favorites',
     'login.title': 'Log in',
     'login.createAccount': 'Create new account',
     'login.loginExisting': 'Log in with existing account',
@@ -101,9 +107,13 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'index.newsTitle': 'NEWS',
     'index.noArticles': 'No articles yet.',
     'index.clearFilter': 'Show all articles',
+    'favorites.title': 'Favorites',
+    'favorites.empty': 'No favorites yet.',
     'article.notFound': 'Article not found',
     'article.source': 'Source:',
     'article.sources': 'Sources:',
+    'article.addFavorite': 'Add to favorites',
+    'article.removeFavorite': 'Remove from favorites',
     'weather.summary': 'High {temp}°C · Rain {pop}%',
     'map.enableLocation': 'Enable location access to see your position on the map.',
     'map.recenterAria': 'Recenter on my location'
@@ -113,6 +123,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'nav.logOut': 'ログアウト',
     'nav.profile': 'プロフィール',
     'nav.map': 'マップ',
+    'nav.favorites': 'お気に入り',
     'login.title': 'ログイン',
     'login.createAccount': '新規アカウント作成',
     'login.loginExisting': '既存アカウントでログイン',
@@ -155,9 +166,13 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'index.newsTitle': 'ニュース',
     'index.noArticles': 'まだ記事がありません。',
     'index.clearFilter': 'すべての記事を表示',
+    'favorites.title': 'お気に入り',
+    'favorites.empty': 'まだお気に入りがありません。',
     'article.notFound': '記事が見つかりません',
     'article.source': '出典:',
     'article.sources': '出典:',
+    'article.addFavorite': 'お気に入りに追加',
+    'article.removeFavorite': 'お気に入りから削除',
     'weather.summary': '最高気温 {temp}°C・降水確率 {pop}%',
     'map.enableLocation': '位置情報へのアクセスを許可すると、地図上に現在地が表示されます。',
     'map.recenterAria': '現在地に戻す'
@@ -167,6 +182,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'nav.logOut': '로그아웃',
     'nav.profile': '프로필',
     'nav.map': '지도',
+    'nav.favorites': '즐겨찾기',
     'login.title': '로그인',
     'login.createAccount': '새 계정 만들기',
     'login.loginExisting': '기존 계정으로 로그인',
@@ -209,9 +225,13 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'index.newsTitle': '뉴스',
     'index.noArticles': '아직 기사가 없습니다.',
     'index.clearFilter': '모든 기사 보기',
+    'favorites.title': '즐겨찾기',
+    'favorites.empty': '아직 즐겨찾기가 없습니다.',
     'article.notFound': '기사를 찾을 수 없습니다',
     'article.source': '출처:',
     'article.sources': '출처:',
+    'article.addFavorite': '즐겨찾기에 추가',
+    'article.removeFavorite': '즐겨찾기에서 삭제',
     'weather.summary': '최고 기온 {temp}°C · 강수확률 {pop}%',
     'map.enableLocation': '위치 정보 접근을 허용하면 지도에서 현재 위치를 확인할 수 있습니다.',
     'map.recenterAria': '내 위치로 이동'
@@ -221,6 +241,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'nav.logOut': '登出',
     'nav.profile': '個人資料',
     'nav.map': '地圖',
+    'nav.favorites': '收藏',
     'login.title': '登入',
     'login.createAccount': '建立新帳戶',
     'login.loginExisting': '使用現有帳戶登入',
@@ -263,9 +284,13 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'index.newsTitle': '新聞',
     'index.noArticles': '尚無文章。',
     'index.clearFilter': '顯示所有文章',
+    'favorites.title': '收藏',
+    'favorites.empty': '尚無收藏文章。',
     'article.notFound': '找不到文章',
     'article.source': '來源：',
     'article.sources': '來源：',
+    'article.addFavorite': '加入收藏',
+    'article.removeFavorite': '取消收藏',
     'weather.summary': '最高氣溫 {temp}°C・降雨機率 {pop}%',
     'map.enableLocation': '允許存取位置資訊即可在地圖上顯示您的位置。',
     'map.recenterAria': '回到目前位置'
@@ -275,6 +300,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'nav.logOut': '登出',
     'nav.profile': '个人资料',
     'nav.map': '地图',
+    'nav.favorites': '收藏',
     'login.title': '登录',
     'login.createAccount': '创建新账户',
     'login.loginExisting': '使用现有账户登录',
@@ -317,9 +343,13 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'index.newsTitle': '新闻',
     'index.noArticles': '暂无文章。',
     'index.clearFilter': '显示所有文章',
+    'favorites.title': '收藏',
+    'favorites.empty': '暂无收藏文章。',
     'article.notFound': '未找到文章',
     'article.source': '来源：',
     'article.sources': '来源：',
+    'article.addFavorite': '加入收藏',
+    'article.removeFavorite': '取消收藏',
     'weather.summary': '最高气温 {temp}°C・降雨概率 {pop}%',
     'map.enableLocation': '允许访问位置信息即可在地图上显示您的位置。',
     'map.recenterAria': '回到当前位置'
@@ -329,6 +359,7 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'nav.logOut': 'Sair',
     'nav.profile': 'Perfil',
     'nav.map': 'Mapa',
+    'nav.favorites': 'Favoritos',
     'login.title': 'Entrar',
     'login.createAccount': 'Criar nova conta',
     'login.loginExisting': 'Entrar com uma conta existente',
@@ -371,9 +402,13 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'index.newsTitle': 'NOTÍCIAS',
     'index.noArticles': 'Ainda não há artigos.',
     'index.clearFilter': 'Ver todos os artigos',
+    'favorites.title': 'Favoritos',
+    'favorites.empty': 'Ainda não há favoritos.',
     'article.notFound': 'Artigo não encontrado',
     'article.source': 'Fonte:',
     'article.sources': 'Fontes:',
+    'article.addFavorite': 'Adicionar aos favoritos',
+    'article.removeFavorite': 'Remover dos favoritos',
     'weather.summary': 'Máxima {temp}°C · Chuva {pop}%',
     'map.enableLocation': 'Ative o acesso à localização para ver sua posição no mapa.',
     'map.recenterAria': 'Centralizar na minha localização'

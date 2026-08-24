@@ -24,6 +24,7 @@ async function logout(): Promise<void> {
 const userMenuItems = computed(() => [
   [
     { label: t('nav.profile'), to: '/profile' },
+    { label: t('nav.favorites'), to: '/favorites' },
     { label: t('nav.map'), to: '/map' }
   ],
   [{ label: t('nav.logOut'), onSelect: logout }]

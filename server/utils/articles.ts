@@ -15,6 +15,11 @@ export function normalizeLocale(value: unknown): TranslationLocale {
     : 'en'
 }
 
+export function parsePage(value: unknown): number {
+  const n = Number(value)
+  return Number.isInteger(n) && n >= 1 ? n : 1
+}
+
 export interface ArticleColumns {
   id: number
   image_url: string | null
@@ -96,7 +101,8 @@ export interface ArticleListResult {
 
 const PAGE_SIZE = 5
 
-const ARTICLE_COLUMNS_SQL = 'id, image_url, status, category, published_at, created_at'
+export const ARTICLE_COLUMNS_SQL =
+  'articles.id, articles.image_url, articles.status, articles.category, articles.published_at, articles.created_at'
 
 export function listPublishedArticles(
   db: Database.Database,
@@ -137,4 +143,9 @@ export function getPublishedArticleById(
   if (!articleColumns) return undefined
   const withTranslations = attachArticleTranslations(db, [articleColumns], locale)
   return attachArticleSources(db, withTranslations)[0]
+}
+
+export function publishedArticleExists(db: Database.Database, id: number): boolean {
+  const row = db.prepare(`SELECT 1 FROM articles WHERE id = ? AND status = 'published'`).get(id)
+  return row !== undefined
 }

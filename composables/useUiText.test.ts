@@ -62,4 +62,23 @@ describe('useUiText', () => {
     expect(locale.value).toBe('ja')
     expect(t('profile.themeDark')).toBe('ダーク')
   })
+
+  it('returns favorites strings for en and ja', async () => {
+    const { useArticleLocale } = await import('./useArticleLocale')
+    vi.stubGlobal('useArticleLocale', useArticleLocale)
+    const { useUiText } = await import('./useUiText')
+
+    const { locale, setLocale } = useArticleLocale()
+    const { t } = useUiText()
+    expect(t('nav.favorites')).toBe('Favorites')
+    expect(t('favorites.title')).toBe('Favorites')
+    expect(t('favorites.empty')).toBe('No favorites yet.')
+    expect(t('article.addFavorite')).toBe('Add to favorites')
+    expect(t('article.removeFavorite')).toBe('Remove from favorites')
+
+    setLocale('ja')
+    expect(locale.value).toBe('ja')
+    expect(t('nav.favorites')).toBe('お気に入り')
+    expect(t('favorites.empty')).toBe('まだお気に入りがありません。')
+  })
 })

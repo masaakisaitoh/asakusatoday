@@ -103,6 +103,15 @@ describe('admin drafts API', async () => {
     const sourceUrl = 'https://e-asakusa.jp/reject-test'
     const id = await insertDraft(sourceUrl)
 
+    const { useDb: useDbBefore } = await import('../../server/utils/db')
+    const dbBefore = useDbBefore()
+    const user = dbBefore.prepare('SELECT id FROM users WHERE address = ?').get(address) as { id: number }
+    // Defensive insurance: today a draft can never actually be favorited, but this
+    // confirms any stray favorites row referencing the rejected article is cleaned up.
+    dbBefore
+      .prepare(`INSERT INTO favorites (user_id, article_id, created_at) VALUES (?, ?, datetime('now'))`)
+      .run(user.id, id)
+
     await $fetch(`/api/admin/drafts/${id}/reject`, { method: 'POST', headers: { cookie } })
 
     const { useDb } = await import('../../server/utils/db')
@@ -113,5 +122,7 @@ describe('admin drafts API', async () => {
     expect(translations).toHaveLength(0)
     const source = db.prepare('SELECT processed_at FROM sources WHERE url = ?').get(sourceUrl) as any
     expect(source.processed_at).toBeNull()
+    const favorites = db.prepare('SELECT * FROM favorites WHERE article_id = ?').all(id)
+    expect(favorites).toHaveLength(0)
   })
 })
