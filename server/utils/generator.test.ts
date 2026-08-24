@@ -1,5 +1,55 @@
 import { describe, it, expect, vi } from 'vitest'
-import type { MessageClient } from './generator'
+import type { MessageClient, BatchResultEntry } from './generator'
+
+const unusedBatches: MessageClient['messages']['batches'] = {
+  create: async () => {
+    throw new Error('batches.create not used in this test')
+  },
+  retrieve: async () => {
+    throw new Error('batches.retrieve not used in this test')
+  },
+  results: async () => {
+    throw new Error('batches.results not used in this test')
+  }
+}
+
+function succeeded(text: string): BatchResultEntry {
+  return { type: 'succeeded', message: { content: [{ type: 'text', text }] } }
+}
+
+function errored(): BatchResultEntry {
+  return { type: 'errored', error: { type: 'api_error', message: 'API error' } }
+}
+
+function makeBatchClient(
+  handler: (params: { messages: { role: 'user'; content: string }[] }) => BatchResultEntry
+): MessageClient {
+  const batches = new Map<string, Map<string, BatchResultEntry>>()
+  let counter = 0
+  return {
+    messages: {
+      create: async () => {
+        throw new Error('messages.create not used in this test')
+      },
+      batches: {
+        create: async ({ requests }) => {
+          const id = `batch-${++counter}`
+          batches.set(id, new Map(requests.map((r) => [r.custom_id, handler(r.params)])))
+          return { id, processing_status: 'ended' }
+        },
+        retrieve: async () => ({ processing_status: 'ended' }),
+        results: async (id: string) => {
+          const map = batches.get(id) ?? new Map()
+          return (async function* () {
+            for (const [custom_id, result] of map) {
+              yield { custom_id, result }
+            }
+          })()
+        }
+      }
+    }
+  }
+}
 
 describe('buildGenerationPrompt', () => {
   it('includes each source text, site name, and url', async () => {
@@ -58,7 +108,8 @@ describe('parseGeneratedArticle', () => {
 function fakeClient(responseText: string): MessageClient {
   return {
     messages: {
-      create: async () => ({ content: [{ type: 'text', text: responseText }] })
+      create: async () => ({ content: [{ type: 'text', text: responseText }] }),
+      batches: unusedBatches
     }
   }
 }
@@ -76,7 +127,7 @@ describe('generateArticleFromSources', () => {
   it('requests enough max_tokens to leave room for extended thinking without truncating output', async () => {
     const { generateArticleFromSources } = await import('./generator')
     const create = vi.fn(async () => ({ content: [{ type: 'text', text: '{"title": "t", "body": "b"}' }] }))
-    await generateArticleFromSources({ messages: { create } }, [
+    await generateArticleFromSources({ messages: { create, batches: unusedBatches } }, [
       { siteName: 'e-asakusa.jp', url: 'https://e-asakusa.jp/', rawText: '元テキスト' }
     ])
     expect(create.mock.calls[0][0].max_tokens).toBeGreaterThanOrEqual(16000)
@@ -154,23 +205,19 @@ describe('translateArticle', () => {
   it('requests enough max_tokens to leave room for extended thinking without truncating 4-locale output', async () => {
     const { translateArticle } = await import('./generator')
     const create = vi.fn(async () => ({ content: [{ type: 'text', text: TRANSLATION_JSON }] }))
-    await translateArticle({ messages: { create } }, { title: '元タイトル', body: '元本文' })
+    await translateArticle({ messages: { create, batches: unusedBatches } }, { title: '元タイトル', body: '元本文' })
     expect(create.mock.calls[0][0].max_tokens).toBeGreaterThanOrEqual(16000)
   })
 })
 
 function fakeGenerateAndTranslateClient(): MessageClient {
-  return {
-    messages: {
-      create: async (params) => {
-        const content = params.messages[0].content
-        if (content.includes('タイトル：')) {
-          return { content: [{ type: 'text', text: TRANSLATION_JSON }] }
-        }
-        return { content: [{ type: 'text', text: '{"title": "生成タイトル", "body": "生成本文"}' }] }
-      }
+  return makeBatchClient((params) => {
+    const content = params.messages[0].content
+    if (content.includes('タイトル：')) {
+      return succeeded(TRANSLATION_JSON)
     }
-  }
+    return succeeded('{"title": "生成タイトル", "body": "生成本文"}')
+  })
 }
 
 describe('generateDraftsForUnprocessedSources', () => {
@@ -226,18 +273,12 @@ describe('generateDraftsForUnprocessedSources', () => {
       `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
     ).run('https://c.example/', 'c', 'asakusa-culture', '本文C')
 
-    const client: MessageClient = {
-      messages: {
-        create: async (params) => {
-          const content = params.messages[0].content
-          if (content.includes('本文A')) throw new Error('API error')
-          if (content.includes('タイトル：')) {
-            return { content: [{ type: 'text', text: TRANSLATION_JSON }] }
-          }
-          return { content: [{ type: 'text', text: '{"title": "生成タイトル", "body": "生成本文"}' }] }
-        }
-      }
-    }
+    const client = makeBatchClient((params) => {
+      const content = params.messages[0].content
+      if (content.includes('本文A')) return errored()
+      if (content.includes('タイトル：')) return succeeded(TRANSLATION_JSON)
+      return succeeded('{"title": "生成タイトル", "body": "生成本文"}')
+    })
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
@@ -260,13 +301,24 @@ describe('generateDraftsForUnprocessedSources', () => {
       `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
     ).run('https://traffic.example/', 't', 'traffic', '交通本文')
 
-    const create = vi.fn(async () => ({ content: [{ type: 'text', text: '{"title": "t", "body": "b"}' }] }))
-    const client: MessageClient = { messages: { create } }
+    const batchCreate = vi.fn(async () => ({ id: 'batch-x', processing_status: 'ended' }))
+    const client: MessageClient = {
+      messages: {
+        create: async () => {
+          throw new Error('messages.create not used in this test')
+        },
+        batches: {
+          create: batchCreate,
+          retrieve: async () => ({ processing_status: 'ended' }),
+          results: async () => (async function* () {})()
+        }
+      }
+    }
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
     expect(result).toEqual({ generated: 0, failed: 0, skippedOld: 0 })
-    expect(create).not.toHaveBeenCalled()
+    expect(batchCreate).not.toHaveBeenCalled()
     const articles = db.prepare(`SELECT * FROM articles`).all()
     expect(articles).toHaveLength(0)
     const unprocessed = db
@@ -284,13 +336,7 @@ describe('generateDraftsForUnprocessedSources', () => {
       `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
     ).run('https://a.example/', 'a', 'asakusa-area', '本文A')
 
-    const client: MessageClient = {
-      messages: {
-        create: async () => {
-          throw new Error('credit balance is too low')
-        }
-      }
-    }
+    const client = makeBatchClient(() => errored())
     const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     await generateDraftsForUnprocessedSources(db, client)
@@ -311,15 +357,11 @@ describe('generateDraftsForUnprocessedSources', () => {
       `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
     ).run('https://a.example/', 'a', 'asakusa-area', '本文A')
 
-    const client: MessageClient = {
-      messages: {
-        create: async (params) => {
-          const content = params.messages[0].content
-          if (content.includes('タイトル：')) throw new Error('translation API error')
-          return { content: [{ type: 'text', text: '{"title": "生成タイトル", "body": "生成本文"}' }] }
-        }
-      }
-    }
+    const client = makeBatchClient((params) => {
+      const content = params.messages[0].content
+      if (content.includes('タイトル：')) return errored()
+      return succeeded('{"title": "生成タイトル", "body": "生成本文"}')
+    })
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
@@ -341,13 +383,9 @@ describe('generateDraftsForUnprocessedSources', () => {
       `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
     ).run('https://old.example/', 'old', 'asakusa-area', '本文Old')
 
-    const client: MessageClient = {
-      messages: {
-        create: async () => ({
-          content: [{ type: 'text', text: '{"title": "旧タイトル", "body": "旧本文", "sourceDate": "2026-06-30"}' }]
-        })
-      }
-    }
+    const client = makeBatchClient(() =>
+      succeeded('{"title": "旧タイトル", "body": "旧本文", "sourceDate": "2026-06-30"}')
+    )
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
@@ -370,19 +408,11 @@ describe('generateDraftsForUnprocessedSources', () => {
       `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
     ).run('https://new.example/', 'new', 'asakusa-area', '本文New')
 
-    const client: MessageClient = {
-      messages: {
-        create: async (params) => {
-          const content = params.messages[0].content
-          if (content.includes('タイトル：')) {
-            return { content: [{ type: 'text', text: TRANSLATION_JSON }] }
-          }
-          return {
-            content: [{ type: 'text', text: '{"title": "新タイトル", "body": "新本文", "sourceDate": "2026-07-03"}' }]
-          }
-        }
-      }
-    }
+    const client = makeBatchClient((params) => {
+      const content = params.messages[0].content
+      if (content.includes('タイトル：')) return succeeded(TRANSLATION_JSON)
+      return succeeded('{"title": "新タイトル", "body": "新本文", "sourceDate": "2026-07-03"}')
+    })
     const { generateDraftsForUnprocessedSources } = await import('./generator')
     const result = await generateDraftsForUnprocessedSources(db, client)
 
@@ -391,5 +421,79 @@ describe('generateDraftsForUnprocessedSources', () => {
       .prepare(`SELECT resource_created_at FROM sources WHERE url = ?`)
       .get('https://new.example/') as any
     expect(source.resource_created_at).toBe('2026-07-03')
+  })
+
+  it('polls the batch status until it ends before reading results', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://slow.example/', 'slow', 'asakusa-area', '本文Slow')
+
+    const results = new Map([
+      ['gen-1', succeeded('{"title": "遅延タイトル", "body": "遅延本文"}')],
+      ['trans-1', succeeded(TRANSLATION_JSON)]
+    ])
+    let retrieveCalls = 0
+    const client: MessageClient = {
+      messages: {
+        create: async () => {
+          throw new Error('messages.create not used in this test')
+        },
+        batches: {
+          create: async () => ({ id: 'batch-slow', processing_status: 'in_progress' }),
+          retrieve: async () => {
+            retrieveCalls++
+            return { processing_status: retrieveCalls >= 2 ? 'ended' : 'in_progress' }
+          },
+          results: async () =>
+            (async function* () {
+              for (const [custom_id, result] of results) {
+                yield { custom_id, result }
+              }
+            })()
+        }
+      }
+    }
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const result = await generateDraftsForUnprocessedSources(db, client, { pollIntervalMs: 1 })
+
+    expect(result).toEqual({ generated: 1, failed: 0, skippedOld: 0 })
+    expect(retrieveCalls).toBeGreaterThanOrEqual(2)
+  })
+
+  it('treats every source as failed and logs a timeout when the batch never ends in time', async () => {
+    process.env.DATABASE_PATH = ':memory:'
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    db.prepare(
+      `INSERT INTO sources (url, site_name, category, raw_text, fetched_at) VALUES (?, ?, ?, ?, datetime('now'))`
+    ).run('https://stuck.example/', 'stuck', 'asakusa-area', '本文Stuck')
+
+    const client: MessageClient = {
+      messages: {
+        create: async () => {
+          throw new Error('messages.create not used in this test')
+        },
+        batches: {
+          create: async () => ({ id: 'batch-stuck', processing_status: 'in_progress' }),
+          retrieve: async () => ({ processing_status: 'in_progress' }),
+          results: async () => (async function* () {})()
+        }
+      }
+    }
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { generateDraftsForUnprocessedSources } = await import('./generator')
+    const result = await generateDraftsForUnprocessedSources(db, client, {
+      pollIntervalMs: 1,
+      maxWaitMs: 1
+    })
+
+    expect(result).toEqual({ generated: 0, failed: 1, skippedOld: 0 })
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining('タイムアウト'))
+    errorSpy.mockRestore()
   })
 })
