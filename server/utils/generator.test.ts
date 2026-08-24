@@ -103,6 +103,12 @@ describe('parseGeneratedArticle', () => {
     const { parseGeneratedArticle } = await import('./generator')
     expect(() => parseGeneratedArticle('{"title": "タイトルのみ"}')).toThrow()
   })
+
+  it('parses a response wrapped in a ```json markdown code fence', async () => {
+    const { parseGeneratedArticle } = await import('./generator')
+    const result = parseGeneratedArticle('```json\n{"title": "タイトル", "body": "本文"}\n```')
+    expect(result).toEqual({ title: 'タイトル', body: '本文', sourceDate: null })
+  })
 })
 
 function fakeClient(responseText: string): MessageClient {
@@ -190,6 +196,18 @@ describe('parseTranslatedArticle', () => {
         })
       )
     ).toThrow()
+  })
+
+  it('parses a response wrapped in a ```json markdown code fence', async () => {
+    const { parseTranslatedArticle } = await import('./generator')
+    const result = parseTranslatedArticle('```json\n' + TRANSLATION_JSON + '\n```')
+    expect(result).toEqual({
+      en: { title: 'EN title', body: 'EN body' },
+      ko: { title: 'KO title', body: 'KO body' },
+      'zh-Hant': { title: 'ZHT title', body: 'ZHT body' },
+      'zh-Hans': { title: 'ZHS title', body: 'ZHS body' },
+      pt: { title: 'PT title', body: 'PT body' }
+    })
   })
 })
 

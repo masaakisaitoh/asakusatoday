@@ -124,8 +124,13 @@ ${sourcesText}
 ---`
 }
 
+function stripMarkdownCodeFence(text: string): string {
+  const match = text.trim().match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/)
+  return match ? match[1] : text
+}
+
 export function parseGeneratedArticle(responseText: string): GeneratedArticle {
-  const parsed = JSON.parse(responseText)
+  const parsed = JSON.parse(stripMarkdownCodeFence(responseText))
   if (typeof parsed.title !== 'string' || typeof parsed.body !== 'string') {
     throw new Error('Invalid generated article shape')
   }
@@ -169,7 +174,7 @@ ${article.body}
 }
 
 export function parseTranslatedArticle(responseText: string): Record<TranslatedLocale, ArticleText> {
-  const parsed = JSON.parse(responseText)
+  const parsed = JSON.parse(stripMarkdownCodeFence(responseText))
   for (const locale of TRANSLATED_LOCALES) {
     const entry = parsed[locale]
     if (!entry || typeof entry.title !== 'string' || typeof entry.body !== 'string') {
