@@ -2,6 +2,13 @@
 import { ref } from 'vue'
 import { useSwipe } from '../composables/useSwipe'
 
+const config = useRuntimeConfig()
+useSeoMeta({
+  title: 'Asakusa Map',
+  description: 'Interactive map of Asakusa spots featured on ASAKUSA TODAY.',
+  ogUrl: `${config.public.siteUrl}/map`
+})
+
 const pageRoot = ref<HTMLElement | null>(null)
 const transitionDirection = useState<'forward' | 'back'>('swipeTransitionDirection', () => 'forward')
 

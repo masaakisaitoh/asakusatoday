@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const { t } = useUiText()
+useSeoMeta({ title: 'Sign In', robots: 'noindex, nofollow' })
 </script>
 
 <template>

@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useAccount } from '../../composables/useAccount'
 
 const { t } = useUiText()
+useSeoMeta({ title: 'Import Account', robots: 'noindex, nofollow' })
 const { importExistingAccount, loginWithAccount } = useAccount()
 const privateKeyInput = ref('')
 const loading = ref(false)

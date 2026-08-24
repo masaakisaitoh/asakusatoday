@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
+import { truncateForDescription, safeJsonLd, toIso8601 } from '../../utils/seo'
 
 const route = useRoute()
 const { locale } = useArticleLocale()
@@ -18,6 +19,48 @@ const { data: user } = useFetch('/api/user/me', { key: 'current-user' })
 const favorited = ref(article.value?.is_favorited ?? false)
 watch(article, (value) => {
   if (value) favorited.value = value.is_favorited
+})
+
+const config = useRuntimeConfig()
+const description = computed(() =>
+  article.value ? truncateForDescription(article.value.body) : undefined
+)
+const canonicalUrl = computed(() => `${config.public.siteUrl}/articles/${route.params.id}`)
+const ogImage = computed(() => article.value?.image_url || `${config.public.siteUrl}/logo.png`)
+
+useSeoMeta({
+  title: () => article.value?.title,
+  description,
+  ogTitle: () => article.value?.title,
+  ogDescription: description,
+  ogType: 'article',
+  ogUrl: canonicalUrl,
+  ogImage
+})
+
+useHead({
+  link: [{ rel: 'canonical', href: canonicalUrl }],
+  script: () =>
+    article.value
+      ? [
+          {
+            type: 'application/ld+json',
+            innerHTML: safeJsonLd({
+              '@context': 'https://schema.org',
+              '@type': 'NewsArticle',
+              headline: article.value.title,
+              image: [ogImage.value],
+              datePublished: toIso8601(article.value.published_at),
+              author: { '@type': 'Organization', name: 'ASAKUSA TODAY' },
+              publisher: {
+                '@type': 'Organization',
+                name: 'ASAKUSA TODAY',
+                logo: { '@type': 'ImageObject', url: `${config.public.siteUrl}/favicon.png` }
+              }
+            })
+          }
+        ]
+      : []
 })
 
 const togglingFavorite = ref(false)

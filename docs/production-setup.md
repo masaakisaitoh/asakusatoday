@@ -156,7 +156,7 @@ crontab -e
 
 ```cron
 # 毎時0分にソース収集
-0 * * * * cd /var/www/asakusatoday && /usr/bin/npx tsx scripts/collect.ts >> /var/log/asakusatoday/collect.log 2>&1
+0 * * * * cd /var/www/asakusatoday && /usr/bin/npx tsx --env-file-if-exists=.env scripts/collect.ts >> /var/log/asakusatoday/collect.log 2>&1
 
 # 収集の30分後に記事生成（ANTHROPIC_API_KEYが必要）
 30 * * * * cd /var/www/asakusatoday && /usr/bin/npx tsx --env-file-if-exists=.env scripts/generate.ts >> /var/log/asakusatoday/generate.log 2>&1

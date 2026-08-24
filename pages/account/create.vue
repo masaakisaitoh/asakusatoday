@@ -5,6 +5,7 @@ import type { SymbolAccount } from '../../utils/symbolCrypto'
 import { buildPrivateKeyFileContent, PRIVATE_KEY_FILE_NAME } from '../../utils/privateKeyFile'
 
 const { t } = useUiText()
+useSeoMeta({ title: 'Create Account', robots: 'noindex, nofollow' })
 const { createNewAccount, loginWithAccount } = useAccount()
 const account = ref<SymbolAccount | null>(null)
 const understood = ref(false)
