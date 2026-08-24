@@ -78,7 +78,7 @@ describe('admin drafts API', async () => {
     await insertDraft('https://e-asakusa.jp/list-test')
 
     const drafts: any = await $fetch('/api/admin/drafts', { headers: { cookie } })
-    const draft = drafts.find((d: any) => d.sources.some((s: any) => s.url === 'https://e-asakusa.jp/list-test'))
+    const draft = drafts.articles.find((d: any) => d.sources.some((s: any) => s.url === 'https://e-asakusa.jp/list-test'))
     expect(draft).toBeDefined()
     expect(draft.category).toBe('asakusa-area')
     expect(draft.title).toBe('下書きタイトル')

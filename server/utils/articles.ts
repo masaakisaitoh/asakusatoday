@@ -132,6 +132,28 @@ export function listPublishedArticles(
   return { articles: attachArticleSources(db, withTranslations), total, page: safePage, pageSize: PAGE_SIZE }
 }
 
+export function listDraftArticles(
+  db: Database.Database,
+  page: number,
+  locale: TranslationLocale
+): ArticleListResult {
+  const safePage = page < 1 ? 1 : page
+  const offset = (safePage - 1) * PAGE_SIZE
+
+  const total = (
+    db.prepare(`SELECT COUNT(*) as count FROM articles WHERE status = 'draft'`).get() as { count: number }
+  ).count
+
+  const articleColumns = db
+    .prepare(
+      `SELECT ${ARTICLE_COLUMNS_SQL} FROM articles WHERE status = 'draft' ORDER BY created_at DESC LIMIT ? OFFSET ?`
+    )
+    .all(PAGE_SIZE, offset) as ArticleColumns[]
+
+  const withTranslations = attachArticleTranslations(db, articleColumns, locale)
+  return { articles: attachArticleSources(db, withTranslations), total, page: safePage, pageSize: PAGE_SIZE }
+}
+
 export function getPublishedArticleById(
   db: Database.Database,
   id: number,
