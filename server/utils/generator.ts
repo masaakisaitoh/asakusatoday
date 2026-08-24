@@ -16,19 +16,86 @@ export interface GeneratedArticle extends ArticleText {
 }
 
 const MIN_SOURCE_DATE = '2026-07-03'
+const MODEL = 'claude-sonnet-5'
+const DEFAULT_POLL_INTERVAL_MS = 10_000
+const DEFAULT_MAX_WAIT_MS = 20 * 60 * 1000
 
 export type TranslatedLocale = 'en' | 'ko' | 'zh-Hant' | 'zh-Hans' | 'pt'
 
 const TRANSLATED_LOCALES: TranslatedLocale[] = ['en', 'ko', 'zh-Hant', 'zh-Hans', 'pt']
 
+interface BatchRequestParams {
+  model: string
+  max_tokens: number
+  messages: { role: 'user'; content: string }[]
+}
+
+export interface BatchResultEntry {
+  type: 'succeeded' | 'errored' | 'canceled' | 'expired'
+  message?: { content: Array<{ type: string; text?: string }> }
+  error?: unknown
+}
+
 export interface MessageClient {
   messages: {
-    create(params: {
-      model: string
-      max_tokens: number
-      messages: { role: 'user'; content: string }[]
-    }): Promise<{ content: Array<{ type: string; text?: string }> }>
+    create(params: BatchRequestParams): Promise<{ content: Array<{ type: string; text?: string }> }>
+    batches: {
+      create(params: {
+        requests: Array<{ custom_id: string; params: BatchRequestParams }>
+      }): Promise<{ id: string; processing_status: string }>
+      retrieve(id: string): Promise<{ processing_status: string }>
+      results(id: string): Promise<AsyncIterable<{ custom_id: string; result: BatchResultEntry }>>
+    }
   }
+}
+
+export interface BatchPollOptions {
+  pollIntervalMs?: number
+  maxWaitMs?: number
+}
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+
+async function runBatch(
+  client: MessageClient,
+  requests: Array<{ custom_id: string; params: BatchRequestParams }>,
+  options: BatchPollOptions
+): Promise<Map<string, BatchResultEntry>> {
+  if (requests.length === 0) return new Map()
+
+  const batch = await client.messages.batches.create({ requests })
+  const pollIntervalMs = options.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS
+  const maxWaitMs = options.maxWaitMs ?? DEFAULT_MAX_WAIT_MS
+  const deadline = Date.now() + maxWaitMs
+
+  let status = batch.processing_status
+  while (status !== 'ended') {
+    if (Date.now() >= deadline) {
+      console.error(`バッチ処理がタイムアウトしました (batch: ${batch.id})`)
+      return new Map()
+    }
+    await sleep(pollIntervalMs)
+    const polled = await client.messages.batches.retrieve(batch.id)
+    status = polled.processing_status
+  }
+
+  const results = new Map<string, BatchResultEntry>()
+  for await (const result of await client.messages.batches.results(batch.id)) {
+    results.set(result.custom_id, result.result)
+  }
+  return results
+}
+
+function errorForBatchResult(result: BatchResultEntry | undefined): Error {
+  if (!result) return new Error('batch result missing')
+  if (result.type === 'succeeded') return new Error('missing message content in batch result')
+  return new Error(`batch request ${result.type}: ${JSON.stringify(result.error ?? {})}`)
+}
+
+function textFromBatchResult(result: BatchResultEntry): string {
+  const textBlock = result.message?.content.find((b) => b.type === 'text')
+  if (!textBlock?.text) throw new Error('No text content in response')
+  return textBlock.text
 }
 
 export function buildGenerationPrompt(sources: PromptSource[]): string {
@@ -74,7 +141,7 @@ export async function generateArticleFromSources(
   sources: PromptSource[]
 ): Promise<GeneratedArticle> {
   const response = await client.messages.create({
-    model: 'claude-opus-5',
+    model: MODEL,
     max_tokens: 16000,
     messages: [{ role: 'user', content: buildGenerationPrompt(sources) }]
   })
@@ -123,7 +190,7 @@ export async function translateArticle(
   article: ArticleText
 ): Promise<Record<TranslatedLocale, ArticleText>> {
   const response = await client.messages.create({
-    model: 'claude-opus-5',
+    model: MODEL,
     max_tokens: 16000,
     messages: [{ role: 'user', content: buildTranslationPrompt(article) }]
   })
@@ -142,7 +209,8 @@ interface UnprocessedSource {
 
 export async function generateDraftsForUnprocessedSources(
   db: Database.Database,
-  client: MessageClient
+  client: MessageClient,
+  options: BatchPollOptions = {}
 ): Promise<{ generated: number; failed: number; skippedOld: number }> {
   const sources = db
     .prepare(
@@ -153,6 +221,8 @@ export async function generateDraftsForUnprocessedSources(
   let generated = 0
   let failed = 0
   let skippedOld = 0
+
+  if (sources.length === 0) return { generated, failed, skippedOld }
 
   const insertArticle = db.prepare(
     `INSERT INTO articles (status, category, created_at) VALUES ('draft', ?, datetime('now'))`
@@ -167,11 +237,37 @@ export async function generateDraftsForUnprocessedSources(
     `UPDATE sources SET processed_at = datetime('now'), resource_created_at = ? WHERE id = ?`
   )
 
+  const genResults = await runBatch(
+    client,
+    sources.map((source) => ({
+      custom_id: `gen-${source.id}`,
+      params: {
+        model: MODEL,
+        max_tokens: 16000,
+        messages: [
+          {
+            role: 'user' as const,
+            content: buildGenerationPrompt([
+              { siteName: source.site_name, url: source.url, rawText: source.raw_text }
+            ])
+          }
+        ]
+      }
+    })),
+    options
+  )
+
+  const pendingTranslation: Array<{ source: UnprocessedSource; article: GeneratedArticle }> = []
+
   for (const source of sources) {
+    const result = genResults.get(`gen-${source.id}`)
+    if (!result || result.type !== 'succeeded') {
+      console.error(`記事生成に失敗しました (source: ${source.url}):`, errorForBatchResult(result))
+      failed++
+      continue
+    }
     try {
-      const article = await generateArticleFromSources(client, [
-        { siteName: source.site_name, url: source.url, rawText: source.raw_text }
-      ])
+      const article = parseGeneratedArticle(textFromBatchResult(result))
 
       if (article.sourceDate && article.sourceDate < MIN_SOURCE_DATE) {
         markProcessed.run(article.sourceDate, source.id)
@@ -179,7 +275,39 @@ export async function generateDraftsForUnprocessedSources(
         continue
       }
 
-      const translations = await translateArticle(client, article)
+      pendingTranslation.push({ source, article })
+    } catch (err) {
+      console.error(`記事生成に失敗しました (source: ${source.url}):`, err)
+      failed++
+    }
+  }
+
+  if (pendingTranslation.length === 0) {
+    return { generated, failed, skippedOld }
+  }
+
+  const transResults = await runBatch(
+    client,
+    pendingTranslation.map(({ source, article }) => ({
+      custom_id: `trans-${source.id}`,
+      params: {
+        model: MODEL,
+        max_tokens: 16000,
+        messages: [{ role: 'user' as const, content: buildTranslationPrompt(article) }]
+      }
+    })),
+    options
+  )
+
+  for (const { source, article } of pendingTranslation) {
+    const result = transResults.get(`trans-${source.id}`)
+    if (!result || result.type !== 'succeeded') {
+      console.error(`記事生成に失敗しました (source: ${source.url}):`, errorForBatchResult(result))
+      failed++
+      continue
+    }
+    try {
+      const translations = parseTranslatedArticle(textFromBatchResult(result))
 
       const insertResult = insertArticle.run(source.category)
       const articleId = insertResult.lastInsertRowid as number
