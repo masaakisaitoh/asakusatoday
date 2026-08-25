@@ -45,6 +45,7 @@ async function confirmDelete() {
 
 <template>
   <div class="h-full overflow-y-auto max-w-3xl mx-auto px-4 py-8">
+    <AdminNav />
     <h1 class="text-2xl font-bold text-primary mb-6">Article Management</h1>
     <p v-if="error" class="text-muted">You do not have access to this page.</p>
     <template v-else>
