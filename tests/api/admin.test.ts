@@ -58,6 +58,29 @@ async function insertDraft(sourceUrl: string): Promise<number> {
   return articleId
 }
 
+async function insertPublished(sourceUrl: string): Promise<number> {
+  const { useDb } = await import('../../server/utils/db')
+  const db = useDb()
+  db.prepare(
+    `INSERT OR IGNORE INTO sources (url, site_name, category, raw_text, fetched_at)
+     VALUES (?, 'e-asakusa.jp', 'asakusa-area', '元テキスト', datetime('now'))`
+  ).run(sourceUrl)
+  const source = db.prepare(`SELECT id FROM sources WHERE url = ?`).get(sourceUrl) as { id: number }
+  const articleResult = db
+    .prepare(
+      `INSERT INTO articles (status, category, published_at, created_at)
+       VALUES ('published', 'asakusa-area', datetime('now'), datetime('now'))`
+    )
+    .run()
+  const articleId = articleResult.lastInsertRowid as number
+  db.prepare(
+    `INSERT INTO article_translations (article_id, locale, title, body)
+     VALUES (?, 'ja', '公開タイトル', '公開本文')`
+  ).run(articleId)
+  db.prepare(`INSERT INTO article_sources (article_id, source_id) VALUES (?, ?)`).run(articleId, source.id)
+  return articleId
+}
+
 describe('admin drafts API', async () => {
   await setup({ server: true, env: { DATABASE_PATH: dbPath } })
 
@@ -124,5 +147,67 @@ describe('admin drafts API', async () => {
     expect(source.processed_at).toBeNull()
     const favorites = db.prepare('SELECT * FROM favorites WHERE article_id = ?').all(id)
     expect(favorites).toHaveLength(0)
+  })
+
+  it('lists articles of every status for an admin user (admin articles endpoint)', async () => {
+    const { cookie, address } = await loginAndGetCookie()
+    await makeAdmin(address)
+    await insertDraft('https://e-asakusa.jp/all-list-draft')
+    await insertPublished('https://e-asakusa.jp/all-list-published')
+
+    const result: any = await $fetch('/api/admin/articles', { headers: { cookie } })
+    expect(result.articles.find((a: any) => a.sources.some((s: any) => s.url === 'https://e-asakusa.jp/all-list-draft'))).toBeDefined()
+    expect(result.articles.find((a: any) => a.sources.some((s: any) => s.url === 'https://e-asakusa.jp/all-list-published'))).toBeDefined()
+  })
+
+  it('rejects non-admin users from the admin articles endpoint with 403', async () => {
+    const { cookie } = await loginAndGetCookie()
+    await expect($fetch('/api/admin/articles', { headers: { cookie } })).rejects.toMatchObject({
+      statusCode: 403
+    })
+  })
+
+  it('deletes a published article without resetting its source processed_at', async () => {
+    const { cookie, address } = await loginAndGetCookie()
+    await makeAdmin(address)
+    const sourceUrl = 'https://e-asakusa.jp/delete-published-test'
+    const id = await insertPublished(sourceUrl)
+    const { useDb: useDbBefore } = await import('../../server/utils/db')
+    useDbBefore()
+      .prepare(`UPDATE sources SET processed_at = '2026-01-01T00:00:00Z' WHERE url = ?`)
+      .run(sourceUrl)
+
+    await $fetch(`/api/admin/articles/${id}`, { method: 'DELETE', headers: { cookie } })
+
+    const { useDb } = await import('../../server/utils/db')
+    const db = useDb()
+    expect(db.prepare('SELECT * FROM articles WHERE id = ?').get(id)).toBeUndefined()
+    const source = db.prepare('SELECT processed_at FROM sources WHERE url = ?').get(sourceUrl) as any
+    expect(source.processed_at).toBe('2026-01-01T00:00:00Z')
+  })
+
+  it('refuses to delete a draft article with 404', async () => {
+    const { cookie, address } = await loginAndGetCookie()
+    await makeAdmin(address)
+    const id = await insertDraft('https://e-asakusa.jp/delete-draft-test')
+
+    await expect(
+      $fetch(`/api/admin/articles/${id}`, { method: 'DELETE', headers: { cookie } })
+    ).rejects.toMatchObject({ statusCode: 404 })
+
+    const { useDb } = await import('../../server/utils/db')
+    const db = useDb()
+    expect(db.prepare('SELECT * FROM articles WHERE id = ?').get(id)).toBeDefined()
+  })
+
+  it('rejects non-admin users from the delete endpoint with 403', async () => {
+    const { address } = await loginAndGetCookie()
+    await makeAdmin(address)
+    const id = await insertPublished('https://e-asakusa.jp/delete-non-admin-test')
+    const { cookie: userCookie } = await loginAndGetCookie()
+
+    await expect(
+      $fetch(`/api/admin/articles/${id}`, { method: 'DELETE', headers: { cookie: userCookie } })
+    ).rejects.toMatchObject({ statusCode: 403 })
   })
 })
