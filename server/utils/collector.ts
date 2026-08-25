@@ -11,11 +11,14 @@ export function extractArticleText(html: string): string {
 export function extractArticleLinks(html: string, baseUrl: string, pattern: RegExp): string[] {
   const $ = cheerio.load(html)
   const urls = new Set<string>()
+  const baseHost = new URL(baseUrl).host
   $('a[href]').each((_, el) => {
     const href = $(el).attr('href')
     if (!href || !pattern.test(href)) return
     try {
-      urls.add(new URL(href, baseUrl).href)
+      const resolved = new URL(href, baseUrl)
+      if (resolved.host !== baseHost) return
+      urls.add(resolved.href)
     } catch {
       // 不正なURLは無視
     }

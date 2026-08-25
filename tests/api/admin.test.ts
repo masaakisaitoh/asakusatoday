@@ -81,6 +81,20 @@ async function insertPublished(sourceUrl: string): Promise<number> {
   return articleId
 }
 
+async function insertSource(url: string): Promise<number> {
+  const { useDb } = await import('../../server/utils/db')
+  const db = useDb()
+  const result = db
+    .prepare(
+      `INSERT OR IGNORE INTO sources (url, site_name, category, raw_text, fetched_at)
+       VALUES (?, 'e-asakusa.jp', 'asakusa-area', '元テキスト', datetime('now'))`
+    )
+    .run(url)
+  if (result.changes > 0) return result.lastInsertRowid as number
+  const existing = db.prepare(`SELECT id FROM sources WHERE url = ?`).get(url) as { id: number }
+  return existing.id
+}
+
 describe('admin drafts API', async () => {
   await setup({ server: true, env: { DATABASE_PATH: dbPath } })
 
@@ -209,5 +223,21 @@ describe('admin drafts API', async () => {
     await expect(
       $fetch(`/api/admin/articles/${id}`, { method: 'DELETE', headers: { cookie: userCookie } })
     ).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('lists sources for an admin user (admin sources endpoint)', async () => {
+    const { cookie, address } = await loginAndGetCookie()
+    await makeAdmin(address)
+    await insertSource('https://e-asakusa.jp/sources-list-test')
+
+    const result: any = await $fetch('/api/admin/sources', { headers: { cookie } })
+    expect(result.sources.some((s: any) => s.url === 'https://e-asakusa.jp/sources-list-test')).toBe(true)
+  })
+
+  it('rejects non-admin users from the admin sources endpoint with 403', async () => {
+    const { cookie } = await loginAndGetCookie()
+    await expect($fetch('/api/admin/sources', { headers: { cookie } })).rejects.toMatchObject({
+      statusCode: 403
+    })
   })
 })
