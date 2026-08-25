@@ -1,5 +1,6 @@
 import { useDb } from '../../../../utils/db'
 import { requireAdminUser } from '../../../../utils/admin'
+import { deleteArticleRows } from '../../../../utils/articles'
 
 export default defineEventHandler((event) => {
   const db = useDb()
@@ -18,9 +19,6 @@ export default defineEventHandler((event) => {
     resetSource.run(source_id)
   }
 
-  db.prepare(`DELETE FROM article_sources WHERE article_id = ?`).run(id)
-  db.prepare(`DELETE FROM article_translations WHERE article_id = ?`).run(id)
-  db.prepare(`DELETE FROM favorites WHERE article_id = ?`).run(id)
-  db.prepare(`DELETE FROM articles WHERE id = ?`).run(id)
+  deleteArticleRows(db, id)
   return { ok: true }
 })

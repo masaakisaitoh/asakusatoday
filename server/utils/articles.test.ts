@@ -242,6 +242,49 @@ describe('listDraftArticles', () => {
   })
 })
 
+describe('listAllArticles', () => {
+  it('returns articles of every status ordered by created_at desc', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const draft = insertArticle(db, { title: 'Draft One', status: 'draft', publishedAt: null })
+    const published = insertArticle(db, { title: 'Published One', status: 'published' })
+    db.prepare(`UPDATE articles SET created_at = '2026-01-01T00:00:00Z' WHERE id = ?`).run(draft)
+    db.prepare(`UPDATE articles SET created_at = '2026-02-01T00:00:00Z' WHERE id = ?`).run(published)
+
+    const { listAllArticles } = await import('./articles')
+    const result = listAllArticles(db, 1, 'ja')
+
+    expect(result.total).toBe(2)
+    expect(result.articles.map((a) => a.title)).toEqual(['Published One', 'Draft One'])
+    expect(result.articles.map((a) => a.status)).toEqual(['published', 'draft'])
+  })
+
+  it('paginates results at 5 per page', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    for (let i = 0; i < 12; i++) {
+      const id = insertArticle(db, { title: `Article ${i}`, status: i % 2 === 0 ? 'draft' : 'published' })
+      db.prepare(`UPDATE articles SET created_at = ? WHERE id = ?`).run(
+        `2026-01-${String(i + 1).padStart(2, '0')}T00:00:00Z`,
+        id
+      )
+    }
+
+    const { listAllArticles } = await import('./articles')
+    const page1 = listAllArticles(db, 1, 'ja')
+    const page2 = listAllArticles(db, 2, 'ja')
+    const page3 = listAllArticles(db, 3, 'ja')
+
+    expect(page1.articles).toHaveLength(5)
+    expect(page2.articles).toHaveLength(5)
+    expect(page3.articles).toHaveLength(2)
+    expect(page1.total).toBe(12)
+    expect(page1.pageSize).toBe(5)
+  })
+})
+
 describe('getPublishedArticleById', () => {
   it('returns undefined for a draft article', async () => {
     const { useDb, resetDbForTests } = await import('./db')
@@ -315,5 +358,49 @@ describe('publishedArticleExists', () => {
 
     const { publishedArticleExists } = await import('./articles')
     expect(publishedArticleExists(db, 999999)).toBe(false)
+  })
+})
+
+describe('deleteArticleRows', () => {
+  it('deletes the article and its translations, sources, and favorites', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const id = insertArticle(db, { title: 'ToDelete' })
+    linkSource(db, id, 'https://example.com/a', 'Example A')
+    db.prepare(
+      `INSERT INTO users (address, public_key, user_name, avatar_seed, created_at)
+       VALUES ('addr1', 'pub1', 'user1', 'seed1', datetime('now'))`
+    ).run()
+    const user = db.prepare(`SELECT id FROM users WHERE address = 'addr1'`).get() as { id: number }
+    db.prepare(`INSERT INTO favorites (user_id, article_id, created_at) VALUES (?, ?, datetime('now'))`).run(
+      user.id,
+      id
+    )
+
+    const { deleteArticleRows } = await import('./articles')
+    deleteArticleRows(db, id)
+
+    expect(db.prepare('SELECT * FROM articles WHERE id = ?').get(id)).toBeUndefined()
+    expect(db.prepare('SELECT * FROM article_translations WHERE article_id = ?').all(id)).toHaveLength(0)
+    expect(db.prepare('SELECT * FROM article_sources WHERE article_id = ?').all(id)).toHaveLength(0)
+    expect(db.prepare('SELECT * FROM favorites WHERE article_id = ?').all(id)).toHaveLength(0)
+  })
+
+  it('does not reset processed_at on linked sources', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const id = insertArticle(db, { title: 'ToDelete' })
+    linkSource(db, id, 'https://example.com/a', 'Example A')
+    db.prepare(`UPDATE sources SET processed_at = '2026-01-01T00:00:00Z' WHERE url = 'https://example.com/a'`).run()
+
+    const { deleteArticleRows } = await import('./articles')
+    deleteArticleRows(db, id)
+
+    const source = db.prepare(`SELECT processed_at FROM sources WHERE url = 'https://example.com/a'`).get() as {
+      processed_at: string | null
+    }
+    expect(source.processed_at).toBe('2026-01-01T00:00:00Z')
   })
 })

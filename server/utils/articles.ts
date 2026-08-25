@@ -154,6 +154,24 @@ export function listDraftArticles(
   return { articles: attachArticleSources(db, withTranslations), total, page: safePage, pageSize: PAGE_SIZE }
 }
 
+export function listAllArticles(
+  db: Database.Database,
+  page: number,
+  locale: TranslationLocale
+): ArticleListResult {
+  const safePage = page < 1 ? 1 : page
+  const offset = (safePage - 1) * PAGE_SIZE
+
+  const total = (db.prepare(`SELECT COUNT(*) as count FROM articles`).get() as { count: number }).count
+
+  const articleColumns = db
+    .prepare(`SELECT ${ARTICLE_COLUMNS_SQL} FROM articles ORDER BY created_at DESC LIMIT ? OFFSET ?`)
+    .all(PAGE_SIZE, offset) as ArticleColumns[]
+
+  const withTranslations = attachArticleTranslations(db, articleColumns, locale)
+  return { articles: attachArticleSources(db, withTranslations), total, page: safePage, pageSize: PAGE_SIZE }
+}
+
 export function getPublishedArticleById(
   db: Database.Database,
   id: number,
@@ -170,4 +188,11 @@ export function getPublishedArticleById(
 export function publishedArticleExists(db: Database.Database, id: number): boolean {
   const row = db.prepare(`SELECT 1 FROM articles WHERE id = ? AND status = 'published'`).get(id)
   return row !== undefined
+}
+
+export function deleteArticleRows(db: Database.Database, id: number): void {
+  db.prepare(`DELETE FROM article_sources WHERE article_id = ?`).run(id)
+  db.prepare(`DELETE FROM article_translations WHERE article_id = ?`).run(id)
+  db.prepare(`DELETE FROM favorites WHERE article_id = ?`).run(id)
+  db.prepare(`DELETE FROM articles WHERE id = ?`).run(id)
 }
