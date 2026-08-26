@@ -2,7 +2,8 @@
 const links = [
   { to: '/admin/drafts', label: 'Drafts' },
   { to: '/admin/articles', label: 'Articles' },
-  { to: '/admin/sources', label: 'Sources' }
+  { to: '/admin/sources', label: 'Sources' },
+  { to: '/admin/map-pins', label: 'Map Pins' }
 ]
 </script>
 

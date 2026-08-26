@@ -7,10 +7,10 @@ const stubs = {
 }
 
 describe('AdminNav', () => {
-  it('renders links to all three admin pages', () => {
+  it('renders links to all four admin pages', () => {
     const wrapper = mount(AdminNav, { global: { stubs } })
     const hrefs = wrapper.findAll('a').map((a) => a.attributes('href'))
-    expect(hrefs).toEqual(['/admin/drafts', '/admin/articles', '/admin/sources'])
+    expect(hrefs).toEqual(['/admin/drafts', '/admin/articles', '/admin/sources', '/admin/map-pins'])
   })
 
   it('renders the expected labels', () => {
@@ -18,5 +18,6 @@ describe('AdminNav', () => {
     expect(wrapper.text()).toContain('Drafts')
     expect(wrapper.text()).toContain('Articles')
     expect(wrapper.text()).toContain('Sources')
+    expect(wrapper.text()).toContain('Map Pins')
   })
 })

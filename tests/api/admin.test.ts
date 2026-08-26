@@ -81,6 +81,18 @@ async function insertPublished(sourceUrl: string): Promise<number> {
   return articleId
 }
 
+async function insertMapPin(name: string): Promise<number> {
+  const { useDb } = await import('../../server/utils/db')
+  const db = useDb()
+  const result = db
+    .prepare(
+      `INSERT INTO map_pins (name, description, category, icon, lat, lng, created_at)
+       VALUES (?, 'テスト説明', 'spot', 'lucide:map-pin', 35.7148, 139.7967, datetime('now'))`
+    )
+    .run(name)
+  return result.lastInsertRowid as number
+}
+
 async function insertSource(url: string): Promise<number> {
   const { useDb } = await import('../../server/utils/db')
   const db = useDb()
@@ -239,5 +251,64 @@ describe('admin drafts API', async () => {
     await expect($fetch('/api/admin/sources', { headers: { cookie } })).rejects.toMatchObject({
       statusCode: 403
     })
+  })
+
+  it('creates and lists map pins for an admin user (admin map-pins endpoint)', async () => {
+    const { cookie, address } = await loginAndGetCookie()
+    await makeAdmin(address)
+
+    const created: any = await $fetch('/api/admin/map-pins', {
+      method: 'POST',
+      headers: { cookie },
+      body: { name: 'Kaminarimon', description: 'Gate', category: 'spot', icon: 'lucide:landmark', lat: 35.7148, lng: 139.7967 }
+    })
+    expect(created.name).toBe('Kaminarimon')
+
+    const result: any = await $fetch('/api/admin/map-pins', { headers: { cookie } })
+    expect(result.some((p: any) => p.id === created.id)).toBe(true)
+  })
+
+  it('rejects non-admin users from the admin map-pins list endpoint with 403', async () => {
+    const { cookie } = await loginAndGetCookie()
+    await expect($fetch('/api/admin/map-pins', { headers: { cookie } })).rejects.toMatchObject({
+      statusCode: 403
+    })
+  })
+
+  it('rejects non-admin users from the admin map-pins create endpoint with 403', async () => {
+    const { cookie } = await loginAndGetCookie()
+    await expect(
+      $fetch('/api/admin/map-pins', {
+        method: 'POST',
+        headers: { cookie },
+        body: { name: 'X', description: '', category: 'spot', icon: 'lucide:map-pin', lat: 0, lng: 0 }
+      })
+    ).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('rejects non-admin users from the admin map-pins update endpoint with 403', async () => {
+    const { address } = await loginAndGetCookie()
+    await makeAdmin(address)
+    const id = await insertMapPin('Update Target')
+    const { cookie: userCookie } = await loginAndGetCookie()
+
+    await expect(
+      $fetch(`/api/admin/map-pins/${id}`, {
+        method: 'PATCH',
+        headers: { cookie: userCookie },
+        body: { name: 'Hacked', description: '', category: 'spot', icon: 'lucide:map-pin', lat: 0, lng: 0 }
+      })
+    ).rejects.toMatchObject({ statusCode: 403 })
+  })
+
+  it('rejects non-admin users from the admin map-pins delete endpoint with 403', async () => {
+    const { address } = await loginAndGetCookie()
+    await makeAdmin(address)
+    const id = await insertMapPin('Delete Target')
+    const { cookie: userCookie } = await loginAndGetCookie()
+
+    await expect(
+      $fetch(`/api/admin/map-pins/${id}`, { method: 'DELETE', headers: { cookie: userCookie } })
+    ).rejects.toMatchObject({ statusCode: 403 })
   })
 })
