@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { SUPPORTED_LOCALES, type TranslationLocale } from '../server/utils/articles'
 import { safeJsonLd } from '../utils/seo'
+
+const rootEl = ref<HTMLElement | null>(null)
+let rootStyleObserver: MutationObserver | null = null
 
 const { locale, setLocale, loadStoredLocale } = useArticleLocale()
 const { t } = useUiText()
@@ -48,6 +51,28 @@ const userMenuItems = computed(() => [
 
 onMounted(() => {
   loadStoredLocale()
+  const el = rootEl.value
+  if (el) {
+    // AdSense's ad-fill script sometimes forces `height: auto !important;
+    // min-height: 0px !important;` directly onto this element while
+    // measuring the page for ad placement, collapsing the whole app shell
+    // (main's `flex-1` has nothing to grow into once its flex parent's
+    // height is cleared). We never set an inline style on this element
+    // ourselves, so any inline height/min-height here is external
+    // interference — strip it and let the `h-dvh` utility class win back.
+    rootStyleObserver = new MutationObserver(() => {
+      if (el.style.height || el.style.minHeight) {
+        el.style.removeProperty('height')
+        el.style.removeProperty('min-height')
+      }
+    })
+    rootStyleObserver.observe(el, { attributes: true, attributeFilter: ['style'] })
+  }
+})
+
+onUnmounted(() => {
+  rootStyleObserver?.disconnect()
+  rootStyleObserver = null
 })
 
 function onLocaleChange(event: Event): void {
@@ -56,7 +81,7 @@ function onLocaleChange(event: Event): void {
 </script>
 
 <template>
-  <div class="h-dvh flex flex-col bg-washi text-ink-black">
+  <div ref="rootEl" class="h-dvh flex flex-col bg-washi text-ink-black">
     <header class="border-b border-default">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
         <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold text-primary no-underline">

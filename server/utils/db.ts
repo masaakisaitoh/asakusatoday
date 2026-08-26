@@ -76,6 +76,17 @@ CREATE TABLE IF NOT EXISTS favorites (
   created_at TEXT NOT NULL,
   PRIMARY KEY (user_id, article_id)
 );
+
+CREATE TABLE IF NOT EXISTS map_pins (
+  id INTEGER PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL DEFAULT '',
+  category TEXT NOT NULL,
+  icon TEXT NOT NULL,
+  lat REAL NOT NULL,
+  lng REAL NOT NULL,
+  created_at TEXT NOT NULL
+);
 `
 
 function migrate(database: Database.Database): void {

@@ -243,4 +243,27 @@ describe('useDb', () => {
         .run(user.id, articleId)
     ).toThrow()
   })
+
+  it('creates a map_pins table', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const tables = db
+      .prepare("SELECT name FROM sqlite_master WHERE type='table'")
+      .all()
+      .map((row: any) => row.name)
+    expect(tables).toContain('map_pins')
+
+    const columns = db.prepare('PRAGMA table_info(map_pins)').all() as { name: string }[]
+    expect(columns.map((c) => c.name)).toEqual([
+      'id',
+      'name',
+      'description',
+      'category',
+      'icon',
+      'lat',
+      'lng',
+      'created_at'
+    ])
+  })
 })

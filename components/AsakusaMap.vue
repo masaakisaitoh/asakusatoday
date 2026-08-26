@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
 import { useGeolocation } from '../composables/useGeolocation'
+import type { MapPin } from '../utils/mapPins'
+import { mapPinCategoryLabelFor } from '../utils/i18n/mapPinCategoryLabels'
+
+const props = defineProps<{
+  pins?: MapPin[]
+  pickMode?: boolean
+  pickedLat?: number | null
+  pickedLng?: number | null
+}>()
+const emit = defineEmits<{ pick: [lat: number, lng: number] }>()
 
 const { t } = useUiText()
 const { locale } = useArticleLocale()
@@ -20,6 +30,16 @@ let accuracyCircle: import('leaflet').Circle | null = null
 let pulseMarker: import('leaflet').Marker | null = null
 let glLayer: import('leaflet').MaplibreGL | null = null
 let glMap: import('maplibre-gl').Map | null = null
+let pinMarkers: import('leaflet').Marker[] = []
+let pickedMarker: import('leaflet').Marker | null = null
+let pinsRenderGeneration = 0
+
+function escapeHtml(value: string): string {
+  return value.replace(/[&<>"']/g, (char) => {
+    const map: Record<string, string> = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }
+    return map[char] ?? char
+  })
+}
 
 function mapLocaleToTileLang(value: string): string {
   switch (value) {
@@ -54,6 +74,43 @@ function pulseIcon(L: typeof import('leaflet')): import('leaflet').DivIcon {
     html: '<span class="map-user-pulse" aria-hidden="true"></span>',
     iconSize: [28, 28],
     iconAnchor: [14, 14]
+  })
+}
+
+async function renderPins(pins: MapPin[]): Promise<void> {
+  if (!map) return
+  const generation = ++pinsRenderGeneration
+  const L = await import('leaflet')
+  const { loadIcon } = await import('@iconify/vue')
+  if (generation !== pinsRenderGeneration || !map) return
+  for (const marker of pinMarkers) marker.remove()
+  pinMarkers = []
+  for (const pin of pins) {
+    let svgHtml = ''
+    try {
+      const icon = await loadIcon(pin.icon)
+      svgHtml = `<svg viewBox="0 0 ${icon.width} ${icon.height}" width="24" height="24">${icon.body}</svg>`
+    } catch {
+      svgHtml = ''
+    }
+    if (generation !== pinsRenderGeneration || !map) return
+    const marker = L.marker([pin.lat, pin.lng], {
+      icon: L.divIcon({ html: svgHtml, className: 'map-pin-icon', iconSize: [28, 28], iconAnchor: [14, 28] })
+    }).addTo(map)
+    const label = mapPinCategoryLabelFor(locale.value, pin.category)
+    marker.bindPopup(
+      `<strong>${escapeHtml(pin.name)}</strong><br><span class="map-pin-popup-category">${escapeHtml(label)}</span><p>${escapeHtml(pin.description)}</p>`
+    )
+    pinMarkers.push(marker)
+  }
+}
+
+function pickedIcon(L: typeof import('leaflet')): import('leaflet').DivIcon {
+  return L.divIcon({
+    className: 'map-picked-marker',
+    html: '<span aria-hidden="true"></span>',
+    iconSize: [20, 20],
+    iconAnchor: [10, 10]
   })
 }
 
@@ -93,6 +150,16 @@ onMounted(async () => {
     console.error('MapLibre GL map error:', e.error)
   })
 
+  if (props.pins) {
+    await renderPins(props.pins)
+  }
+
+  if (props.pickMode) {
+    map.on('click', (e) => {
+      emit('pick', e.latlng.lat, e.latlng.lng)
+    })
+  }
+
   startGeolocation()
 })
 
@@ -106,7 +173,36 @@ watch(locale, (newLocale) => {
   if (glMap && glMap.isStyleLoaded()) {
     applyMapLanguage(glMap, mapLocaleToTileLang(newLocale))
   }
+  if (props.pins) {
+    renderPins(props.pins)
+  }
 })
+
+watch(
+  () => props.pins,
+  (pins) => {
+    if (pins) renderPins(pins)
+  },
+  { deep: true }
+)
+
+watch(
+  () => [props.pickedLat, props.pickedLng] as const,
+  async ([lat, lng]) => {
+    if (!map) return
+    const L = await import('leaflet')
+    if (lat == null || lng == null) {
+      pickedMarker?.remove()
+      pickedMarker = null
+      return
+    }
+    if (!pickedMarker) {
+      pickedMarker = L.marker([lat, lng], { icon: pickedIcon(L), interactive: false }).addTo(map)
+    } else {
+      pickedMarker.setLatLng([lat, lng])
+    }
+  }
+)
 
 watch(
   () => [geo.value.lat, geo.value.lng, geo.value.accuracy] as const,
@@ -189,6 +285,30 @@ function recenter(): void {
 </template>
 
 <style>
+.map-pin-icon {
+  color: var(--color-asakusa-red-500);
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.9));
+}
+
+.dark .map-pin-icon {
+  color: var(--color-asakusa-red-400);
+  filter: drop-shadow(0 0 2px rgba(0, 0, 0, 0.6));
+}
+
+.map-picked-marker span {
+  display: block;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--color-asakusa-red-500);
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+}
+
+.dark .map-picked-marker span {
+  background: var(--color-asakusa-red-400);
+}
+
 .map-user-pulse {
   display: block;
   width: 28px;
