@@ -81,14 +81,14 @@ function onLocaleChange(event: Event): void {
 </script>
 
 <template>
-  <div ref="rootEl" class="h-dvh flex flex-col bg-washi text-ink-black">
+  <div ref="rootEl" class="h-dvh flex flex-col overflow-x-hidden bg-washi text-ink-black">
     <header class="border-b border-default">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between">
-        <NuxtLink to="/" class="flex items-center gap-2 text-xl font-bold text-primary no-underline">
-          <img src="/favicon.png" alt="" class="h-10 w-10 rounded-full" width="40" height="40" />
-          <span>ASAKUSA TODAY</span>
+        <NuxtLink to="/" class="flex min-w-0 items-center gap-2 text-xl font-bold text-primary no-underline">
+          <img src="/favicon.png" alt="" class="h-10 w-10 shrink-0 rounded-full" width="40" height="40" />
+          <span class="truncate">ASAKUSA TODAY</span>
         </NuxtLink>
-        <div class="flex items-center gap-3">
+        <div class="flex shrink-0 items-center gap-3">
           <UDropdownMenu v-if="user" :items="userMenuItems" :content="{ align: 'end' }">
             <button
               type="button"

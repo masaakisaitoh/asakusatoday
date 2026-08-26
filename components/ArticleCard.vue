@@ -15,7 +15,7 @@ function goToCategory(): void {
 </script>
 
 <template>
-  <NuxtLink :to="`/articles/${id}`" class="block h-full no-underline">
+  <NuxtLink :to="`/articles/${id}`" class="block h-full min-w-0 no-underline">
     <UCard class="h-full transition hover:ring-2 hover:ring-secondary" :ui="{ body: 'p-3', header: 'p-0' }">
       <template v-if="imageUrl" #header>
         <img :src="imageUrl" :alt="title" class="aspect-video w-full object-cover">
@@ -29,7 +29,7 @@ function goToCategory(): void {
       >
         {{ categoryLabel(category) }}
       </UBadge>
-      <h2 class="line-clamp-2 font-bold text-highlighted">{{ title }}</h2>
+      <h2 class="line-clamp-2 wrap-anywhere font-bold text-highlighted">{{ title }}</h2>
       <time class="text-sm text-muted">{{ publishedAt }}</time>
     </UCard>
   </NuxtLink>

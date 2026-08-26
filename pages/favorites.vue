@@ -25,7 +25,7 @@ if (error.value) {
 </script>
 
 <template>
-  <div class="h-full overflow-y-auto max-w-5xl mx-auto px-4 py-8">
+  <div class="h-full w-full overflow-y-auto max-w-5xl mx-auto px-4 py-8">
     <h1 class="text-2xl font-bold text-primary mb-6">{{ t('favorites.title') }}</h1>
     <p v-if="data && data.articles.length === 0" class="text-muted">
       {{ t('favorites.empty') }}

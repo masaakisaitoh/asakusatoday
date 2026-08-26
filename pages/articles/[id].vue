@@ -85,7 +85,7 @@ async function toggleFavorite(): Promise<void> {
 </script>
 
 <template>
-  <div v-if="article" class="h-full overflow-y-auto max-w-2xl mx-auto px-4 py-6">
+  <div v-if="article" class="h-full w-full overflow-y-auto max-w-2xl mx-auto px-4 py-6">
     <UCard :ui="{ body: 'p-4 sm:p-6', header: 'p-0' }">
       <template v-if="article.image_url" #header>
         <img :src="article.image_url" :alt="article.title" class="w-full aspect-video object-cover">
