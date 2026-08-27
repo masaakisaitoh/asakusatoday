@@ -8,6 +8,7 @@ import { useUiText } from '../composables/useUiText'
 const stubs = {
   NuxtLink: { template: '<a><slot /></a>' },
   UserAvatar: { template: '<div class="user-avatar-stub" />' },
+  AdBanner: { template: '<div class="ad-banner-stub" />' },
   UDropdownMenu: {
     props: ['items'],
     computed: { flatItems(): any[] { return (this as any).items.flat() } },
@@ -20,7 +21,10 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
-function stubUseState(user: { avatar_seed: string; user_name: string } | null = null) {
+function stubUseState(
+  user: { avatar_seed: string; user_name: string } | null = null,
+  path = '/'
+) {
   const stateCache = new Map()
   vi.stubGlobal('useState', (_key: string, init: () => unknown) => {
     if (!stateCache.has(_key)) {
@@ -33,6 +37,7 @@ function stubUseState(user: { avatar_seed: string; user_name: string } | null = 
   vi.stubGlobal('useFetch', () => ({ data: ref(user) }))
   vi.stubGlobal('useHead', vi.fn())
   vi.stubGlobal('useRuntimeConfig', () => ({ public: { siteUrl: 'https://asakusatoday.com' } }))
+  vi.stubGlobal('useRoute', () => ({ path }))
   const fetchMock = vi.fn()
   const navigateMock = vi.fn()
   vi.stubGlobal('$fetch', fetchMock)
@@ -105,5 +110,17 @@ describe('default layout', () => {
     await logoutItem?.trigger('click')
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' })
     expect(navigateMock).toHaveBeenCalledWith('/login')
+  })
+
+  it('shows the ad banner on non-admin pages', () => {
+    stubUseState(null, '/')
+    const wrapper = mount(DefaultLayout, { global: { stubs } })
+    expect(wrapper.find('.ad-banner-stub').exists()).toBe(true)
+  })
+
+  it('hides the ad banner on admin pages', () => {
+    stubUseState(null, '/admin/articles')
+    const wrapper = mount(DefaultLayout, { global: { stubs } })
+    expect(wrapper.find('.ad-banner-stub').exists()).toBe(false)
   })
 })
