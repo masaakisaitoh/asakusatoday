@@ -9,6 +9,14 @@ export function isFavorited(db: Database.Database, userId: number, articleId: nu
   return row !== undefined
 }
 
+export function getFavoriteCount(db: Database.Database, articleId: number): number {
+  return (
+    db.prepare('SELECT COUNT(*) as count FROM favorites WHERE article_id = ?').get(articleId) as {
+      count: number
+    }
+  ).count
+}
+
 export function toggleFavorite(db: Database.Database, userId: number, articleId: number): boolean {
   if (isFavorited(db, userId, articleId)) {
     db.prepare('DELETE FROM favorites WHERE user_id = ? AND article_id = ?').run(userId, articleId)

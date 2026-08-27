@@ -52,6 +52,35 @@ describe('isFavorited', () => {
   })
 })
 
+describe('getFavoriteCount', () => {
+  it('returns 0 when the article has no favorites', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const articleId = insertArticle(db)
+
+    const { getFavoriteCount } = await import('./favorites')
+    expect(getFavoriteCount(db, articleId)).toBe(0)
+  })
+
+  it('counts favorites across all users for the article', async () => {
+    const { useDb, resetDbForTests } = await import('./db')
+    resetDbForTests()
+    const db = useDb()
+    const userA = insertUser(db, 'addrA')
+    const userB = insertUser(db, 'addrB')
+    const articleId = insertArticle(db)
+    const otherArticleId = insertArticle(db, { title: 'Other' })
+
+    const { toggleFavorite, getFavoriteCount } = await import('./favorites')
+    toggleFavorite(db, userA, articleId)
+    toggleFavorite(db, userB, articleId)
+    toggleFavorite(db, userA, otherArticleId)
+
+    expect(getFavoriteCount(db, articleId)).toBe(2)
+  })
+})
+
 describe('toggleFavorite', () => {
   it('adds a favorite and returns true when not previously favorited', async () => {
     const { useDb, resetDbForTests } = await import('./db')

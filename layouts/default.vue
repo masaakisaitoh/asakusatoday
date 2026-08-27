@@ -7,7 +7,7 @@ const rootEl = ref<HTMLElement | null>(null)
 let rootStyleObserver: MutationObserver | null = null
 
 const route = useRoute()
-const isAdminRoute = computed(() => route.path.startsWith('/admin'))
+const hidesAdBanner = computed(() => route.path.startsWith('/admin') || route.path.startsWith('/map'))
 
 const { locale, setLocale, loadStoredLocale } = useArticleLocale()
 const { t } = useUiText()
@@ -108,7 +108,7 @@ function onLocaleChange(event: Event): void {
     <main class="flex-1 min-h-0 flex flex-col relative overflow-hidden">
       <slot />
     </main>
-    <AdBanner v-if="!isAdminRoute" />
+    <AdBanner v-if="!hidesAdBanner" />
     <footer class="border-t border-default">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between text-sm text-muted">
         <span>© ASAKUSA TODAY</span>
