@@ -4,7 +4,9 @@ import { SUPPORTED_LOCALES, type TranslationLocale } from '../server/utils/artic
 import { safeJsonLd } from '../utils/seo'
 
 const rootEl = ref<HTMLElement | null>(null)
+const footerEl = ref<HTMLElement | null>(null)
 let rootStyleObserver: MutationObserver | null = null
+let footerResizeObserver: ResizeObserver | null = null
 
 const route = useRoute()
 const hidesAdBanner = computed(() => route.path.startsWith('/admin') || route.path.startsWith('/map'))
@@ -71,11 +73,20 @@ onMounted(() => {
     })
     rootStyleObserver.observe(el, { attributes: true, attributeFilter: ['style'] })
   }
+
+  if (el && footerEl.value) {
+    footerResizeObserver = new ResizeObserver(([entry]) => {
+      el.style.setProperty('--footer-height', `${entry.contentRect.height}px`)
+    })
+    footerResizeObserver.observe(footerEl.value)
+  }
 })
 
 onUnmounted(() => {
   rootStyleObserver?.disconnect()
   rootStyleObserver = null
+  footerResizeObserver?.disconnect()
+  footerResizeObserver = null
 })
 
 function onLocaleChange(event: Event): void {
@@ -116,7 +127,7 @@ function onLocaleChange(event: Event): void {
       <slot />
     </main>
     <AdBanner v-if="!hidesAdBanner" />
-    <footer class="border-t border-default">
+    <footer ref="footerEl" class="border-t border-default">
       <div class="max-w-5xl mx-auto px-4 py-2 flex items-center justify-between text-sm text-muted">
         <span>© ASAKUSA TODAY</span>
         <select
