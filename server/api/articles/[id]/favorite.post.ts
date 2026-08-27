@@ -1,7 +1,7 @@
 import { useDb } from '../../../utils/db'
 import { requireSessionUser } from '../../../utils/session'
 import { publishedArticleExists } from '../../../utils/articles'
-import { toggleFavorite } from '../../../utils/favorites'
+import { toggleFavorite, getFavoriteCount } from '../../../utils/favorites'
 
 export default defineEventHandler((event) => {
   const db = useDb()
@@ -11,5 +11,5 @@ export default defineEventHandler((event) => {
     throw createError({ statusCode: 404, message: 'Article not found' })
   }
   const favorited = toggleFavorite(db, user.id, id)
-  return { favorited }
+  return { favorited, favorite_count: getFavoriteCount(db, id) }
 })

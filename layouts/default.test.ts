@@ -123,4 +123,10 @@ describe('default layout', () => {
     const wrapper = mount(DefaultLayout, { global: { stubs } })
     expect(wrapper.find('.ad-banner-stub').exists()).toBe(false)
   })
+
+  it('hides the ad banner on the map page', () => {
+    stubUseState(null, '/map')
+    const wrapper = mount(DefaultLayout, { global: { stubs } })
+    expect(wrapper.find('.ad-banner-stub').exists()).toBe(false)
+  })
 })

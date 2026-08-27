@@ -159,6 +159,29 @@ describe('articles API', async () => {
     expect(article.is_favorited).toBe(true)
   })
 
+  it('includes favorite_count reflecting favorites from all users', async () => {
+    const { useDb } = await import('../../server/utils/db')
+    const db = useDb()
+    const result = db
+      .prepare(
+        `INSERT INTO articles (status, category, published_at, created_at)
+         VALUES ('published', 'traffic', '2026-01-01T00:00:00Z', datetime('now'))`
+      )
+      .run()
+    const id = result.lastInsertRowid
+    db.prepare(
+      `INSERT INTO article_translations (article_id, locale, title, body) VALUES (?, 'en', 'Count Me', 'Body')`
+    ).run(id)
+
+    const cookieA = await loginAndGetCookie()
+    const cookieB = await loginAndGetCookie()
+    await $fetch(`/api/articles/${id}/favorite`, { method: 'POST', headers: { cookie: cookieA } })
+    await $fetch(`/api/articles/${id}/favorite`, { method: 'POST', headers: { cookie: cookieB } })
+
+    const article: any = await $fetch(`/api/articles/${id}`)
+    expect(article.favorite_count).toBe(2)
+  })
+
   it('does not leak another user\'s favorite into is_favorited', async () => {
     const cookieA = await loginAndGetCookie()
     const cookieB = await loginAndGetCookie()

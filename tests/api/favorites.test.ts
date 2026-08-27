@@ -76,6 +76,30 @@ describe('favorites API', async () => {
     expect(second.favorited).toBe(false)
   })
 
+  it('returns the updated favorite_count after each toggle', async () => {
+    const cookieA = await loginAndGetCookie()
+    const cookieB = await loginAndGetCookie()
+    const articleId = await insertPublishedArticle('Count Toggle')
+
+    const first: any = await $fetch(`/api/articles/${articleId}/favorite`, {
+      method: 'POST',
+      headers: { cookie: cookieA }
+    })
+    expect(first.favorite_count).toBe(1)
+
+    const second: any = await $fetch(`/api/articles/${articleId}/favorite`, {
+      method: 'POST',
+      headers: { cookie: cookieB }
+    })
+    expect(second.favorite_count).toBe(2)
+
+    const third: any = await $fetch(`/api/articles/${articleId}/favorite`, {
+      method: 'POST',
+      headers: { cookie: cookieA }
+    })
+    expect(third.favorite_count).toBe(1)
+  })
+
   it('rejects a list request without a session', async () => {
     await expect($fetch('/api/favorites')).rejects.toMatchObject({ statusCode: 401 })
   })
