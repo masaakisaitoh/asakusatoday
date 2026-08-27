@@ -92,6 +92,13 @@ function onLocaleChange(event: Event): void {
           <span class="truncate">ASAKUSA TODAY</span>
         </NuxtLink>
         <div class="flex shrink-0 items-center gap-3">
+          <NuxtLink
+            to="/map"
+            class="flex h-9 w-9 items-center justify-center rounded-full text-ink-black no-underline focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            :aria-label="t('nav.map')"
+          >
+            <UIcon name="lucide:map" class="size-6" />
+          </NuxtLink>
           <UDropdownMenu v-if="user" :items="userMenuItems" :content="{ align: 'end' }">
             <button
               type="button"
