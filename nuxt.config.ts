@@ -25,13 +25,6 @@ export default defineNuxtConfig({
         { property: 'og:site_name', content: 'ASAKUSA TODAY' },
         { property: 'og:image', content: 'https://asakusatoday.com/logo.png' },
         { name: 'twitter:card', content: 'summary_large_image' }
-      ],
-      script: [
-        {
-          src: 'https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-4995620565805965',
-          async: true,
-          crossorigin: 'anonymous'
-        }
       ]
     }
   }
