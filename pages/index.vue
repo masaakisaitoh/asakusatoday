@@ -39,6 +39,10 @@ const { data } = await useFetch('/api/articles', {
 })
 
 const { data: weather } = await useFetch<WeatherForecast | null>('/api/weather')
+
+useHead({
+  script: [{ src: 'https://cotrii.com/embed.js', async: true }]
+})
 </script>
 
 <template>
@@ -74,6 +78,16 @@ const { data: weather } = await useFetch<WeatherForecast | null>('/api/weather')
     </div>
     <div v-if="data && data.total > data.pageSize" class="flex justify-center mt-8">
       <UPagination v-model:page="page" :total="data.total" :items-per-page="data.pageSize" />
+    </div>
+    <div class="flex justify-center mt-8">
+      <iframe
+        src="https://cotrii.com/embed/@asakusatoday/latest?theme=light"
+        width="100%"
+        height="300"
+        frameborder="0"
+        loading="lazy"
+        class="max-w-2xl"
+      />
     </div>
   </div>
 </template>
