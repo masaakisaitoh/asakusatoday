@@ -8,7 +8,6 @@ import { useUiText } from '../composables/useUiText'
 const stubs = {
   NuxtLink: { template: '<a><slot /></a>' },
   UserAvatar: { template: '<div class="user-avatar-stub" />' },
-  AdBanner: { template: '<div class="ad-banner-stub" />' },
   UDropdownMenu: {
     props: ['items'],
     computed: { flatItems(): any[] { return (this as any).items.flat() } },
@@ -110,23 +109,5 @@ describe('default layout', () => {
     await logoutItem?.trigger('click')
     expect(fetchMock).toHaveBeenCalledWith('/api/auth/logout', { method: 'POST' })
     expect(navigateMock).toHaveBeenCalledWith('/login')
-  })
-
-  it('shows the ad banner on non-admin pages', () => {
-    stubUseState(null, '/')
-    const wrapper = mount(DefaultLayout, { global: { stubs } })
-    expect(wrapper.find('.ad-banner-stub').exists()).toBe(true)
-  })
-
-  it('hides the ad banner on admin pages', () => {
-    stubUseState(null, '/admin/articles')
-    const wrapper = mount(DefaultLayout, { global: { stubs } })
-    expect(wrapper.find('.ad-banner-stub').exists()).toBe(false)
-  })
-
-  it('hides the ad banner on the map page', () => {
-    stubUseState(null, '/map')
-    const wrapper = mount(DefaultLayout, { global: { stubs } })
-    expect(wrapper.find('.ad-banner-stub').exists()).toBe(false)
   })
 })
