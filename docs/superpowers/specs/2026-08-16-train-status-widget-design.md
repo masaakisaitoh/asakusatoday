@@ -34,12 +34,12 @@
 
 ## 前提・方針
 
-- [[2026-08-15-ui-design.md]]の方針を踏襲し、UI表示文言は英語で統一する。
+- [[2026-08-15-ui-design.md]]の方針を踏襲する。UI文言は`WeatherCard.vue`の実装([[2026-08-16-weather-widget-design.md]]策定時点の設計書では「英語で統一」としていたが、実装では`composables/useUiText.ts`(`utils/i18n/uiStrings.ts`)経由の6言語(ja/en/ko/zh-Hant/zh-Hans/pt)対応キーになっている)に合わせ、`TrainStatusCard.vue`も`useUiText()`のi18nキーで表示する。路線名("Ginza Line"等)のみ、設計時の合意通り英語の静的文字列で固定する(路線名は翻訳対象にしない)。
 - 外部通信(ODPTへのfetch)はサーバー側でのみ行う([[2026-08-16-weather-widget-design.md]]と同じ方針)。
 - ODPTのAPIキー(`consumerKey`)はユーザー自身が https://developer.odpt.org/ で登録・取得し、`.env`に`ODPT_API_KEY`として設定する。キー未設定・取得失敗時はカードを非表示にし、ページ全体のエラーにはしない。
 - キャッシュTTLは5分(`CACHE_TTL_MS = 5 * 60 * 1000`)。運行情報は天気より鮮度の重要度が高いため、天気(30分)より短くする。
 - 東京メトロ・都営地下鉄(・追加候補のつくばエクスプレス)への問い合わせは`Promise.allSettled`で並行に行い、一部の事業者が失敗しても残りの結果だけで動作する。
-- ODPTの路線ID・レスポンスのフィールド名は公開ドキュメントからの推測であり、実APIキー入手前は未検証。キー入手後に実データで疎通確認し、ズレがあれば修正する前提とする。
+- ODPTの路線ID・レスポンスのフィールド名は2026-08-31に実APIキーで疎通確認済み。5路線とも`odpt:railway`が設計通りのID(`odpt.Railway:TokyoMetro.Ginza`/`.Hibiya`、`odpt.Railway:Toei.Asakusa`/`.Oedo`、`odpt.Railway:MIR.TsukubaExpress`)で返ることを確認した。ただし確認時点でどの路線も平常運転中だったため、異常時(`delayed`/`suspended`/`disrupted`)の実際の文言は未確認のまま。`odpt:trainInformationStatus`フィールドは確認した全件で常に`null`(存在しない)であり、`odpt:trainInformationText`のみが埋まっていた。
 
 ## アーキテクチャ
 
@@ -76,18 +76,22 @@ export function getTrainStatus(fetchFn?: typeof fetch, now?: () => Date): Promis
 export function resetTrainStatusCacheForTests(): void
 ```
 
-- 対象路線ID(推測。要実データ検証):
+- 対象路線ID(2026-08-31に実APIキーで疎通確認済み。`GET https://api.odpt.org/api/v4/odpt:TrainInformation?odpt:operator=odpt.Operator:<事業者>&acl:consumerKey=<キー>`で5路線とも下記IDで返ることを確認した):
   - `odpt.Railway:TokyoMetro.Ginza` → `ginza` / "Ginza Line"
   - `odpt.Railway:TokyoMetro.Hibiya` → `hibiya` / "Hibiya Line"
   - `odpt.Railway:Toei.Asakusa` → `asakusa` / "Asakusa Line"
   - `odpt.Railway:Toei.Oedo` → `oedo` / "Oedo Line"
-  - `odpt.Railway:MIR.TsukubaExpress` → `tx` / "Tsukuba Express"(追加候補。事業者コード・路線IDとも未検証。運行情報提供元は`api.odpt.org`上の首都圏新都市鉄道(MIR)の`odpt:TrainInformation`)
-- ODPTのレスポンス(配列)の各要素から`odpt:railway`で対象路線を絞り込み、`odpt:trainInformationStatus`・`odpt:trainInformationText`の両フィールド(それぞれ文字列 or `{ja, en, ...}`形式のどちらも許容)からテキストを取り出し、2つを連結した1本の文字列に対してキーワード判定する(どちらか一方にしかキーワードが無くても拾えるようにするため):
-  - 「平常」を含む → `normal`
+  - `odpt.Railway:MIR.TsukubaExpress` → `tx` / "Tsukuba Express"(運行情報提供元は`api.odpt.org`上の首都圏新都市鉄道(MIR)の`odpt:TrainInformation`、事業者コードは`odpt.Operator:MIR`)
+- ODPTのレスポンス(配列)の各要素から`odpt:railway`で対象路線を絞り込み、`odpt:trainInformationStatus`・`odpt:trainInformationText`の両フィールド(それぞれ文字列 or `{ja, en, ...}`形式のどちらも許容)からテキストを取り出し、2つを連結した1本の文字列に対してキーワード判定する(どちらか一方にしかキーワードが無くても拾えるようにするため。2026-08-31の実データ確認では`odpt:trainInformationStatus`は全件`null`で`odpt:trainInformationText`のみ埋まっていたが、異常時に前者が使われるケースに備えて両方見る):
+  - 「平常どおり運転」「平常通り運転」の定型句(正規表現イメージ: `/平常(どおり|通り)[^。、]{0,10}運転/`)に一致 → `normal`。東京メトロ・つくばエクスプレスの平常時定型文言「現在、平常どおり/平常通り運転しています。」に対応する。単純な「平常」の部分一致にしていないのは、鉄道の異常時案内文は末尾に「平常運転に戻るまで今しばらくお待ちください」のような復旧見込み文言を付けることが多く、単純な部分一致だと運転見合わせ・遅延中の文言まで`normal`に誤判定してしまうため(最終レビューで発見、2026-08-31に修正)。
+  - 「遅延」「遅れ」「見合わせ」「運休」のいずれかに続けて(15文字以内に)「ありません」または「ございません」が現れる打ち消し表現 → `normal`。2026-08-31の実データ確認で、都営地下鉄(浅草線・三田線・新宿線・大江戸線・荒川線・日暮里舎人ライナー)の平常時定型文言が「現在、１５分以上の遅延はありません。」であり、東京メトロ・つくばエクスプレスとは言い回しが異なると判明したための判定(単純な「平常」一致だけでは都営の平常運転を`delayed`と誤判定してしまう)。正規表現イメージ: `/(遅延|遅れ|見合わせ|運休)[^。、]{0,15}(ありません|ございません)/`
   - 「見合わせ」を含む → `suspended`
   - 「遅延」または「遅れ」を含む → `delayed`
+  - 上記のいずれにも一致しないが「平常」という語自体は含む → `normal`(最後の保険。ここまでで拾いきれなかった、既知パターン外の平常表現向け)
   - 上記以外の空でないテキスト → `disrupted`(未知の異常。判定できないテキストは「異常あり」寄りに倒す)
   - テキストが空、または対象路線が見つからない → その路線はスキップ(`unknown`として結果から除外し、"正常"と決めつけない)
+  - 上記の異常系(`suspended`/`delayed`/`disrupted`)の実際の文言は2026-08-31時点で未確認(確認時点で全路線平常運転中だったため)。実装後、実際に異常が発生した際の文言を確認し、判定ロジックに漏れがあれば追って修正する。
+- ODPTへのfetchは`AbortSignal.timeout(5000)`で5秒のタイムアウトを設ける(2026-08-31の最終レビューで追加。タイムアウトが無いと、ODPTの応答が返らない場合に`pages/index.vue`のSSR全体がハングしうるため)。
 - `getTrainStatus()`のキャッシュ・fetch方針は[[2026-08-16-weather-widget-design.md]]の`getWeatherForecast()`と同型(`fetchFn`・`now`を差し替え可能にし、TTL経過で再取得)。
 
 ### 2. `server/api/train-status/index.get.ts`(新規)
@@ -100,13 +104,18 @@ export default defineEventHandler(() => {
 
 ### 3. `components/TrainStatusCard.vue`(新規)
 
-- `ArticleCard.vue`/`WeatherCard.vue`と同じく、propsを受け取って表示するだけの純粋な表示コンポーネント。
+- `ArticleCard.vue`/`WeatherCard.vue`と同じく、propsを受け取って表示するだけの純粋な表示コンポーネント。`WeatherCard.vue`と同様`useUiText()`を使う。
 - props: `{ lines: TrainLineStatus[] }`
 - 表示ロジック(コンポーネント内で`lines`から算出):
-  - `lines`の長さが対象路線の全数(つくばエクスプレスを追加する場合は5)かつ全て`normal` → "All lines running normally." の一行のみ表示
-  - `normal`以外のものが1件以上ある → その路線だけ「⚠️ Ginza Line — Delayed」のように列挙する(`normal`の路線は出さない)
+  - `lines`の長さが対象路線の全数(5)かつ全て`normal` → `t('train.allNormal')`の一行のみ表示
+  - `normal`以外のものが1件以上ある → その路線だけ`t('train.lineStatus', { line: lineName, status: t(statusKey) })`のように列挙する(`normal`の路線は出さない)。`lineName`は`TrainLineStatus.lineName`(英語固定)、`statusKey`は`status`の値に応じて`train.statusDelayed`/`train.statusSuspended`/`train.statusDisrupted`のいずれか。
   - 上記どちらにも該当しない(部分的なデータのみで異常も無い) → 何も描画しない(`UCard`ごと出さない)
-- `UCard`ベース。表示文言は英語(例: "All lines running normally.", "Delayed", "Suspended", "Service Alert"(`disrupted`用))。
+- `UCard`ベース。追加するi18nキー(`utils/i18n/uiStrings.ts`の`UiStringKey`に追加、6言語(ja/en/ko/zh-Hant/zh-Hans/pt)分の翻訳文言を用意):
+  - `train.allNormal`: 英語 "All lines running normally."
+  - `train.lineStatus`: 英語 "⚠️ {line} — {status}"(`{line}`・`{status}`はパラメータ)
+  - `train.statusDelayed`: 英語 "Delayed"
+  - `train.statusSuspended`: 英語 "Suspended"
+  - `train.statusDisrupted`: 英語 "Service Alert"
 
 ### 4. `pages/index.vue`(既存を修正)
 
@@ -128,5 +137,5 @@ export default defineEventHandler(() => {
 
 - `server/utils/trainStatus.test.ts`: ODPTのレスポンス構造を模したサンプルデータ(東京メトロ・都営、および追加する場合はつくばエクスプレスそれぞれ)を使い、`parseOperatorTrainInformation()`の正常系(4区分それぞれの判定、対象外路線の除外、テキスト空の路線の除外)、`getTrainStatus()`の正常系・キー未設定時に`null`・一部の事業者だけ失敗しても結果が返ること・全事業者失敗時に`null`・キャッシュのTTL挙動([[2026-08-16-weather-widget-design.md]]の`weather.test.ts`と同様に`fetchFn`・`now`を差し替えて)をテストする。
 - `server/api/train-status/index.get.ts`自体は薄いラッパーであり、[[2026-08-16-weather-widget-design.md]]の`/api/weather`と同じ理由(`@nuxt/test-utils`のサーバーが別プロセスで起動するため`fetchFn`を差し替えられない)で自動テストは追加せず、ODPTキー入手後に`npm run dev` + `curl`で手動疎通確認する。
-- `components/TrainStatusCard.test.ts`: props(`lines`配列)を渡した時の3パターン(全路線正常、一部異常、部分データで異常なし=非表示)の表示内容をテストする。
+- `components/TrainStatusCard.test.ts`: `WeatherCard.test.ts`と同様に`useState`/`useArticleLocale`/`useUiText`をスタブし、props(`lines`配列)を渡した時の3パターン(全路線正常、一部異常、部分データで異常なし=非表示)の表示内容をテストする。
 - `pages/index.vue`側は既存の`tests/smoke.test.ts`が壊れていないことを確認する程度とし、新規のE2Eテストは追加しない。ODPTキー未設定・fetch失敗時も`getTrainStatus()`は`null`を返す設計のため、キー未設定の環境(CI等)でもテストは失敗しない。
