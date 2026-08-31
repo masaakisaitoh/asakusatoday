@@ -49,15 +49,17 @@ useHead({
 
 <template>
   <div ref="pageRoot" data-swipe-target class="h-full w-full min-w-0 overflow-y-auto max-w-5xl mx-auto px-4 py-8">
-    <WeatherCard
-      v-if="weather"
-      :weather-emoji="weather.weatherEmoji"
-      :weather-label="weather.weatherLabel"
-      :pop="weather.pop"
-      :high-temp="weather.highTemp"
-      class="mb-6"
-    />
-    <TrainStatusCard v-if="trainStatus" :lines="trainStatus" class="mb-6" />
+    <div v-if="weather || trainStatus" class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+      <WeatherCard
+        v-if="weather"
+        :weather-emoji="weather.weatherEmoji"
+        :weather-label="weather.weatherLabel"
+        :pop="weather.pop"
+        :high-temp="weather.highTemp"
+        class="sm:flex-1"
+      />
+      <TrainStatusCard v-if="trainStatus" :lines="trainStatus" class="sm:flex-1" />
+    </div>
     <h1 class="text-2xl font-bold text-primary" :class="categoryFilter ? 'mb-2' : 'mb-6'">
       {{ t('index.newsTitle') }}
     </h1>
