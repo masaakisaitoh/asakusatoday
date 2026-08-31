@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type { WeatherForecast } from '../server/utils/weather'
+import type { TrainLineStatus } from '../server/utils/trainStatus'
 import { useSwipe } from '../composables/useSwipe'
 
 const route = useRoute()
@@ -39,6 +40,7 @@ const { data } = await useFetch('/api/articles', {
 })
 
 const { data: weather } = await useFetch<WeatherForecast | null>('/api/weather')
+const { data: trainStatus } = await useFetch<TrainLineStatus[] | null>('/api/train-status')
 
 useHead({
   script: [{ src: 'https://cotrii.com/embed.js', async: true }]
@@ -55,6 +57,7 @@ useHead({
       :high-temp="weather.highTemp"
       class="mb-6"
     />
+    <TrainStatusCard v-if="trainStatus" :lines="trainStatus" class="mb-6" />
     <h1 class="text-2xl font-bold text-primary" :class="categoryFilter ? 'mb-2' : 'mb-6'">
       {{ t('index.newsTitle') }}
     </h1>

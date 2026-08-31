@@ -46,6 +46,23 @@ describe('useUiText', () => {
     expect(t('weather.summary', { temp: 29, pop: 30 })).toBe('High 29°C · Rain 30%')
   })
 
+  it('returns train status strings for en and ja', async () => {
+    const { useArticleLocale } = await import('./useArticleLocale')
+    vi.stubGlobal('useArticleLocale', useArticleLocale)
+    const { useUiText } = await import('./useUiText')
+
+    const { locale, setLocale } = useArticleLocale()
+    const { t } = useUiText()
+    expect(t('train.allNormal')).toBe('All lines running normally.')
+    expect(t('train.lineStatus', { line: 'Ginza Line', status: 'Delayed' })).toBe('⚠️ Ginza Line — Delayed')
+    expect(t('train.statusSuspended')).toBe('Suspended')
+
+    setLocale('ja')
+    expect(locale.value).toBe('ja')
+    expect(t('train.allNormal')).toBe('全線、平常運転しています。')
+    expect(t('train.statusDelayed')).toBe('遅延')
+  })
+
   it('returns theme option labels for en and ja', async () => {
     const { useArticleLocale } = await import('./useArticleLocale')
     vi.stubGlobal('useArticleLocale', useArticleLocale)
