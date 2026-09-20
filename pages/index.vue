@@ -49,7 +49,7 @@ useHead({
 
 <template>
   <div ref="pageRoot" data-swipe-target class="h-full w-full min-w-0 overflow-y-auto max-w-5xl mx-auto px-4 py-8">
-    <div v-if="weather || trainStatus" class="flex flex-col sm:flex-row gap-4 sm:gap-6 mb-6">
+    <div v-if="weather || trainStatus" class="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6 mb-6">
       <WeatherCard
         v-if="weather"
         :weather-emoji="weather.weatherEmoji"

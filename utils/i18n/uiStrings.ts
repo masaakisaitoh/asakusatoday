@@ -55,11 +55,11 @@ export type UiStringKey =
   | 'article.addFavorite'
   | 'article.removeFavorite'
   | 'weather.summary'
-  | 'train.allNormal'
-  | 'train.lineStatus'
   | 'train.statusDelayed'
   | 'train.statusSuspended'
   | 'train.statusDisrupted'
+  | 'train.statusNormal'
+  | 'train.viewOfficial'
   | 'map.enableLocation'
   | 'map.recenterAria'
 
@@ -120,11 +120,11 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'article.addFavorite': 'Add to favorites',
     'article.removeFavorite': 'Remove from favorites',
     'weather.summary': 'High {temp}°C · Rain {pop}%',
-    'train.allNormal': 'All lines running normally.',
-    'train.lineStatus': '⚠️ {line} — {status}',
     'train.statusDelayed': 'Delayed',
     'train.statusSuspended': 'Suspended',
     'train.statusDisrupted': 'Service Alert',
+    'train.statusNormal': 'Normal',
+    'train.viewOfficial': 'Check official site',
     'map.enableLocation': 'Enable location access to see your position on the map.',
     'map.recenterAria': 'Recenter on my location'
   },
@@ -184,11 +184,11 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'article.addFavorite': 'お気に入りに追加',
     'article.removeFavorite': 'お気に入りから削除',
     'weather.summary': '最高気温 {temp}°C・降水確率 {pop}%',
-    'train.allNormal': '全線、平常運転しています。',
-    'train.lineStatus': '⚠️ {line} — {status}',
     'train.statusDelayed': '遅延',
     'train.statusSuspended': '運転見合わせ',
     'train.statusDisrupted': '運行情報',
+    'train.statusNormal': '平常',
+    'train.viewOfficial': '公式サイトで確認',
     'map.enableLocation': '位置情報へのアクセスを許可すると、地図上に現在地が表示されます。',
     'map.recenterAria': '現在地に戻す'
   },
@@ -248,11 +248,11 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'article.addFavorite': '즐겨찾기에 추가',
     'article.removeFavorite': '즐겨찾기에서 삭제',
     'weather.summary': '최고 기온 {temp}°C · 강수확률 {pop}%',
-    'train.allNormal': '모든 노선이 정상 운행 중입니다.',
-    'train.lineStatus': '⚠️ {line} — {status}',
     'train.statusDelayed': '지연',
     'train.statusSuspended': '운행 중단',
     'train.statusDisrupted': '운행 정보',
+    'train.statusNormal': '정상',
+    'train.viewOfficial': '공식 사이트에서 확인',
     'map.enableLocation': '위치 정보 접근을 허용하면 지도에서 현재 위치를 확인할 수 있습니다.',
     'map.recenterAria': '내 위치로 이동'
   },
@@ -312,11 +312,11 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'article.addFavorite': '加入收藏',
     'article.removeFavorite': '取消收藏',
     'weather.summary': '最高氣溫 {temp}°C・降雨機率 {pop}%',
-    'train.allNormal': '所有路線正常行駛中。',
-    'train.lineStatus': '⚠️ {line} — {status}',
     'train.statusDelayed': '延誤',
     'train.statusSuspended': '停駛',
     'train.statusDisrupted': '行車資訊',
+    'train.statusNormal': '正常',
+    'train.viewOfficial': '前往官方網站查看',
     'map.enableLocation': '允許存取位置資訊即可在地圖上顯示您的位置。',
     'map.recenterAria': '回到目前位置'
   },
@@ -376,11 +376,11 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'article.addFavorite': '加入收藏',
     'article.removeFavorite': '取消收藏',
     'weather.summary': '最高气温 {temp}°C・降雨概率 {pop}%',
-    'train.allNormal': '所有线路正常运行中。',
-    'train.lineStatus': '⚠️ {line} — {status}',
     'train.statusDelayed': '延误',
     'train.statusSuspended': '停运',
     'train.statusDisrupted': '行车信息',
+    'train.statusNormal': '正常',
+    'train.viewOfficial': '前往官方网站查看',
     'map.enableLocation': '允许访问位置信息即可在地图上显示您的位置。',
     'map.recenterAria': '回到当前位置'
   },
@@ -440,11 +440,11 @@ export const UI_STRINGS: Record<TranslationLocale, Record<UiStringKey, string>> 
     'article.addFavorite': 'Adicionar aos favoritos',
     'article.removeFavorite': 'Remover dos favoritos',
     'weather.summary': 'Máxima {temp}°C · Chuva {pop}%',
-    'train.allNormal': 'Todas as linhas operando normalmente.',
-    'train.lineStatus': '⚠️ {line} — {status}',
     'train.statusDelayed': 'Atraso',
     'train.statusSuspended': 'Suspenso',
     'train.statusDisrupted': 'Alerta de serviço',
+    'train.statusNormal': 'Normal',
+    'train.viewOfficial': 'Ver no site oficial',
     'map.enableLocation': 'Ative o acesso à localização para ver sua posição no mapa.',
     'map.recenterAria': 'Centralizar na minha localização'
   }
