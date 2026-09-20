@@ -104,6 +104,8 @@ export default defineEventHandler(() => {
 
 ### 3. `components/TrainStatusCard.vue`(新規)
 
+> 2026-09-19: 表示ロジック(「全路線正常なら一行のみ」「異常な路線だけ列挙」「部分データで異常なしなら非表示」)と`train.allNormal`・`train.lineStatus`キーは、[[2026-09-19-train-line-logos-design.md]]で「路線ごとに1行(ロゴ+路線名+状態)」に置き換わった。
+
 - `ArticleCard.vue`/`WeatherCard.vue`と同じく、propsを受け取って表示するだけの純粋な表示コンポーネント。`WeatherCard.vue`と同様`useUiText()`を使う。
 - props: `{ lines: TrainLineStatus[] }`
 - 表示ロジック(コンポーネント内で`lines`から算出):

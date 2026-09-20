@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { ref } from 'vue'
+import { UI_STRINGS } from '../utils/i18n/uiStrings'
 
 beforeEach(() => {
   const stateCache = new Map()
@@ -53,14 +54,33 @@ describe('useUiText', () => {
 
     const { locale, setLocale } = useArticleLocale()
     const { t } = useUiText()
-    expect(t('train.allNormal')).toBe('All lines running normally.')
-    expect(t('train.lineStatus', { line: 'Ginza Line', status: 'Delayed' })).toBe('⚠️ Ginza Line — Delayed')
     expect(t('train.statusSuspended')).toBe('Suspended')
 
     setLocale('ja')
     expect(locale.value).toBe('ja')
-    expect(t('train.allNormal')).toBe('全線、平常運転しています。')
     expect(t('train.statusDelayed')).toBe('遅延')
+  })
+
+  it('returns the normal-status and official-link strings for en and ja', async () => {
+    const { useArticleLocale } = await import('./useArticleLocale')
+    vi.stubGlobal('useArticleLocale', useArticleLocale)
+    const { useUiText } = await import('./useUiText')
+
+    const { setLocale } = useArticleLocale()
+    const { t } = useUiText()
+    expect(t('train.statusNormal')).toBe('Normal')
+    expect(t('train.viewOfficial')).toBe('Check official site')
+
+    setLocale('ja')
+    expect(t('train.statusNormal')).toBe('平常')
+    expect(t('train.viewOfficial')).toBe('公式サイトで確認')
+  })
+
+  it('defines the normal-status and official-link strings for every locale', () => {
+    for (const [locale, strings] of Object.entries(UI_STRINGS)) {
+      expect(strings['train.statusNormal'], locale).toBeTruthy()
+      expect(strings['train.viewOfficial'], locale).toBeTruthy()
+    }
   })
 
   it('returns theme option labels for en and ja', async () => {
